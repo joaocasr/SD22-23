@@ -17,6 +17,22 @@ public class UsersFacade {
     //cenario: 2 utilizadores autenticam-se ao mesmo tempo e possuem a mesma password. 1 deles autentica-se mal e outra autentica-se bem
     //pode acontecer de a conta que introduziu mal a password se autenticar com sucesso ->evitar com locks
 
+    public boolean criarUser(String username,String password){
+        boolean b = false;
+
+        try {
+            l.lock();
+            if(!(this.allUsers.containsKey(username)))
+            {
+                this.allUsers.put(username,new User(username,password));
+                b=true;
+            }
+            return b;
+        }finally {
+            l.unlock();
+        }
+    }
+
     public boolean login(String username,String password){
         boolean b = false;
         try {

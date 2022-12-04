@@ -7,6 +7,11 @@ public class User implements Serializable {
     private boolean logged;
     ReentrantLock l = new ReentrantLock();
 
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
     public User(String username, String password,boolean logged) {
         this.username = username;
         this.password = password;
