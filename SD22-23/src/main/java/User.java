@@ -4,13 +4,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class User implements Serializable {
     private String username;
     private String password;
-    private boolean logged;
     ReentrantLock l = new ReentrantLock();
 
-    public User(String username, String password,boolean logged) {
+    public User(String username, String password) {
         this.username = username;
         this.password = password;
-        this.logged = logged;
     }
 
     public User(User u){
@@ -54,35 +52,18 @@ public class User implements Serializable {
         }
     }
 
-    public boolean isLogged() {
-        try {
-            l.lock();
-            return logged;
-        }finally {
-            l.unlock();
-        }
-    }
-
-    public void setLogged(boolean logged) {
-        try {
-            l.lock();
-            this.logged = logged;
-        }finally {
-            l.unlock();
-        }
-    }
 
     void serialize (DataOutputStream out) throws IOException {
         out.writeUTF(this.username);
         out.writeUTF(this.password);
-        out.writeBoolean(this.logged);
+        out.writeUTF(";");
     }
 
     static User deserialize (DataInputStream in) throws IOException {
         String username = in.readUTF();
         String password = in.readUTF();
         boolean logged = in.readBoolean();
-        return new User(username,password,logged);
+        return new User(username,password);
     }
 
 }

@@ -10,7 +10,7 @@ public class UsersFacade {
 
     public UsersFacade(){
         this.allUsers = new HashMap<>();
-        User user = new User("joao","joaopass",false);
+        User user = new User("joao","joaopass");
         this.allUsers.put(user.getUsername(),user);
     }
 
@@ -22,6 +22,21 @@ public class UsersFacade {
         try {
             l.lock();
             if (this.allUsers.get(username).getPassword().equals(password)) {
+                b=true;
+            }
+            return b;
+        }finally {
+            l.unlock();
+        }
+    }
+
+    public boolean registarUser(String username,String password){
+        boolean b = false;
+        try {
+            l.lock();
+            if(!(this.existeUser(username)))
+            {
+                this.allUsers.put(username,new User(username,password));
                 b=true;
             }
             return b;
@@ -43,14 +58,6 @@ public class UsersFacade {
         }
     }
 
-    public void getUsers (DataOutputStream out) throws IOException {
-        out.writeInt(this.allUsers.values().size());
-        for(User user : allUsers.values()) {
-            user.serialize(out);
-            out.flush();
-        }
-    }
-
     public Map<String,User> getAllUsers(){
         try{
             l.lock();
@@ -60,19 +67,20 @@ public class UsersFacade {
         }
     }
 
-
-
     public void guardarUser(User u) throws IOException {
         DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("users.bin")));
-        dataOutputStream.writeUTF(u.getUsername());
-        dataOutputStream.writeUTF(u.getPassword());
-        dataOutputStream.writeBoolean(u.isLogged());
-        dataOutputStream.writeUTF(";");
+        u.serialize(dataOutputStream);
     }
 
-    public void carregarUsers(User u) throws IOException {
-        //DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream("users.bin")));
-
+    public void carregarUsers() throws IOException {
+        DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream("users.bin")));
+        while (dataInputStream.read()!=-1){
+            String username = dataInputStream.readUTF();
+            String passsword = dataInputStream.readUTF();
+            String delimiter = dataInputStream.readUTF();
+            User u = new User(username,passsword);
+            this.allUsers.put(username,u);
+        }
     }
 
 }

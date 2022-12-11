@@ -1,10 +1,11 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class Menu {
     public interface Handler {
-        public void execute() ;
+        public void execute() throws InterruptedException;
     }
 
 
@@ -67,7 +68,7 @@ public class Menu {
     }
 
     // Método: Execução do menu
-    public void run() {
+    public void run() throws InterruptedException {
         int option;
         do {
             show();
@@ -77,14 +78,14 @@ public class Menu {
                 System.out.print("\nOpção indisponível!");
             else if (option > 0) {
                 this.handlers.get(option - 1).execute();
-
             }
         } while (this.exit == false);
     }
 
+
     // Método: Apresentar todas as opções do menu
     public void show() {
-        System.out.println("*********************************** GESTÃO DE FROTA ***************************************");
+        System.out.println("********************* GESTÃO DE FROTA DE TROTINETES *********************");
         for (int i = 0; i < this.options.size(); i++) {
             if(i != (this.options.size()-1)) {
                 System.out.print("| * ");
