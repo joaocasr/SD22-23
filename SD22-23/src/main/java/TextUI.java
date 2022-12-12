@@ -26,7 +26,7 @@ public class TextUI {
         List<String> opcoes = new ArrayList<>();
         opcoes.add("Listagem de trotinetes livres.");
         menu.setOptions(opcoes);
-        menu.setHandlers(1,this::listarTrotinetes);
+        menu.setHandlers(1,this::listarTrotinetesLivres);
         menu.run();
     }
 
@@ -81,7 +81,25 @@ public class TextUI {
         t.join();
     }
 
-    public void listarTrotinetes(){
-        System.out.println("nao implementado");
+    public void listarTrotinetesLivres() throws InterruptedException {
+        Thread t = new Thread(() -> {
+            try {
+                System.out.println("Insira o local: ");
+                Scanner scanner = new Scanner(System.in);
+                String local = scanner.nextLine();
+                System.out.println("Insira o raio de distância (km): ");
+                int dist = scanner.nextInt();
+                String dados = local+";"+dist+";";
+                demultiplexer.send(3,dados.getBytes());
+
+                byte [] b = demultiplexer.receive(3);
+                String response = new String(b);
+                System.out.println(response);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        t.start();
+        t.join();
     }
 }

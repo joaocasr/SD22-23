@@ -85,7 +85,7 @@ public class Menu {
 
     // Método: Apresentar todas as opções do menu
     public void show() {
-        System.out.println("********************* GESTÃO DE FROTA DE TROTINETES *********************");
+        System.out.println("********************* GESTÃO DE FROTA DE TROTINETES- Braga *********************");
         for (int i = 0; i < this.options.size(); i++) {
             if(i != (this.options.size()-1)) {
                 System.out.print("| * ");
@@ -98,7 +98,7 @@ public class Menu {
                 System.out.print(i + 1);
                 System.out.print(" -");
                 System.out.print(this.options.get(i));
-                System.out.print("\n__________________________________________________________________________________________");
+                System.out.print("\n_______________________________________________________________________________");
             }
         }
     }
