@@ -24,9 +24,11 @@ public class TextUI {
 
     public void MenuSecundario() throws InterruptedException {
         List<String> opcoes = new ArrayList<>();
-        opcoes.add("Listagem de trotinetes livres.");
+        opcoes.add("Listagem de trotinetes livres.\n");
+        opcoes.add("Estacionamento de trotinete.");
         menu.setOptions(opcoes);
         menu.setHandlers(1,this::listarTrotinetesLivres);
+        menu.setHandlers(2,this::estacionamentodeTrotinetes);
         menu.run();
     }
 
@@ -102,4 +104,27 @@ public class TextUI {
         t.start();
         t.join();
     }
+
+    public void estacionamentodeTrotinetes() throws InterruptedException{
+        Thread t = new Thread(()->{
+           try{
+               System.out.println("Insira o código de reserva:");
+               Scanner scanner = new Scanner(System.in);
+               String codigo = scanner.nextLine();
+               System.out.println("Insira o local que estacionou:");
+               String local = scanner.nextLine();
+               String dados = codigo+";"+local+";";
+               demultiplexer.send(4,dados.getBytes());
+
+               byte [] b = demultiplexer.receive(4);
+               String response = new String(b);
+               System.out.println(response);
+
+           }catch (Exception e) {
+               e.printStackTrace();
+           }
+        });
+    }
+
+
 }

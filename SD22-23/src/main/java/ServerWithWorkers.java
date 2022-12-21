@@ -8,13 +8,16 @@ public class ServerWithWorkers {
     private static final Map<String,TaggedConnection> allUsersConnections=new HashMap<>();
     private static UsersFacade users;
     private static Mapa mapa;
+    private static Reserva reservas;
 
     public static void main(String[] args) throws Exception {
         System.out.println("Executing...");
         ServerSocket ss = new ServerSocket(12345);
         users = new UsersFacade();
         mapa = new Mapa();
+        reservas = new Reserva();
         while(true) {
+            System.out.println("Running...");
             Socket s = ss.accept();
             TaggedConnection c = new TaggedConnection(s);
 
@@ -73,6 +76,14 @@ public class ServerWithWorkers {
                                 String tabela = mapa.showDisponiveis(l);
                                 c.send(frame.tag, tabela.getBytes());
                             }
+                        }
+                        else if(frame.tag == 4){
+                            String[] info = data.split(";");
+                            System.out.println(info[0] + "," + info[1]);
+                            double custo = mapa.trataEstacionamento(info[0],info[1],reservas);
+                            int recompensa = mapa.devolveRecompensa(info[0],info[1],reservas);
+                            String response = "Estacionamento efetuado com sucesso!\n O custo da viagem é de"+custo+".\nRecompensa:"+recompensa;
+                            c.send(frame.tag,response.getBytes());
                         }
                     }
                 } catch (Exception e) {

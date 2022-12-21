@@ -3,9 +3,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Mapa {
     private Local [][] mapa;
@@ -13,6 +19,8 @@ public class Mapa {
     private List<String> nomes = new ArrayList<>();
     private List<Trotinete> trotinetes = new ArrayList<>();
     private ReentrantLock l = new ReentrantLock();
+    private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private Map<String,Integer> recompensas = new HashMap<>();
 
     public Mapa() throws FileNotFoundException {
         int N = this.size = 20;
@@ -44,12 +52,29 @@ public class Mapa {
 
 
     public Local getLocal(int x,int y){
-        try{
-            l.lock();
-            return this.mapa[x][y];
-        }finally {
-            l.unlock();
+        return this.mapa[x][y];
+    }
+
+    public Local getLocal(String local){
+        int N=20;
+        Local l = null;
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                if(mapa[i][j].getName().equals(local)) l= mapa[i][j];
+            }
         }
+        return l;
+    }
+
+    public Local getLocalTrotinete(String codigo){
+        int N=20;
+        Local l = null;
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                if(mapa[i][j].getAllTrotinetes().stream().anyMatch(x -> x.getCodigo().equals(codigo))) l= mapa[i][j];
+            }
+        }
+        return l;
     }
 
     public Local[][] getMapa() {
@@ -68,6 +93,28 @@ public class Mapa {
         return m;
     }
 
+    public int calculaRecompensa(String inicio,String fim){
+        //calcular a partir de que raio se encontram trotinetes livres
+        Local l1 = getLocal(inicio);
+        Local l2 = getLocal(fim);
+        int recompensa=0;
+        if(l1.getAllTrotinetesLivres().size()<=1 || l2.getAllTrotinetesLivres().size()>0) return recompensa;
+        else {
+            int i = 1;
+            boolean found = false;
+            while (!found) {
+                List<Local> l = calculaProximidades(l1.getName(),i);
+                int numLocais= l.size();
+                if(l.stream().filter(x->x.getAllTrotinetesLivres().size()==0).count()==numLocais){
+                    recompensa++;
+                }else{
+                    found=true;
+                }
+                i++;
+            }
+        }
+        return recompensa;
+    }
 
     public double calculaDistancia(String Origem, String Destino){
         int x1=-1,x2=0,y1=-1,y2=0;
@@ -92,20 +139,34 @@ public class Mapa {
         }
     }
 
-    //lock para garantir que na lista de trotinetes não tenha nenhuma que já mudou para uma posicao que
     public List<Local> calculaProximidades(String origem, int distancia){
         List<Local> locais = new ArrayList<>();
-        try {
-            l.lock();
             for (int i = 0; i < this.size; i++) {
                 for (int j = 0; j < this.size; j++) {
                     if(calculaDistancia(origem,mapa[i][j].getName())>0 && calculaDistancia(origem,mapa[i][j].getName())<distancia) locais.add(mapa[i][j]);
                 }
             }
-        }finally {
-            l.unlock();
-        }
         return locais;
+    }
+
+
+    public double trataEstacionamento(String codreserva,String local,Reserva reserva){
+        Local chegada = getLocal(local);
+        String codigo = reserva.getReservas().get(codreserva);//codigo trotinete
+        Local partida = getLocal(codigo);
+        trotinetes.stream().filter(x->x.getCodigo().equals(codigo)).findFirst().get().setlivre();
+        LocalDateTime beginTime = reserva.getTempoReservas().get(codreserva);
+        long time = ChronoUnit.SECONDS.between(LocalDateTime.now(),beginTime);
+        double distancia = calculaDistancia(partida.getName(),chegada.getName());
+        return time * distancia;
+    }
+
+    public int devolveRecompensa(String codreserva,String local,Reserva reserva){
+        Local chegada = getLocal(local);
+        String codigo = reserva.getReservas().get(codreserva);//codigo trotinete
+        Local partida = getLocal(codigo);
+        String par = chegada.getName()+"-"+partida.getName();
+        return this.recompensas.get(par);
     }
 
     public List<String> lerFicheiro (String nomeFich) throws FileNotFoundException {
@@ -118,6 +179,7 @@ public class Mapa {
         return lines;
     }
 
+    /*
     public String showMenu(){
         StringBuilder tabela = new StringBuilder();
         tabela.append("------------------------------------------------------------------------------------------------------------------------------------------");
@@ -132,13 +194,13 @@ public class Mapa {
             }
         }
         return tabela.toString();
-    }
+    }*/
 
     public String showDisponiveis(List<Local> locais){
         StringBuilder tabela = new StringBuilder();
         int k=0;
         try {
-            l.lock();
+            readWriteLock.writeLock().lock();
             for (Local l : locais) {
                 if (l.getAllTrotinetesLivres().size() != 0) {
                     k += l.getAllTrotinetesLivres().size();
@@ -149,7 +211,7 @@ public class Mapa {
             tabela.append("Total de trotinetes disponíveis = ").append(k);
             return tabela.toString();
         }finally {
-            l.unlock();
+            readWriteLock.writeLock().unlock();
         }
     }
 }
