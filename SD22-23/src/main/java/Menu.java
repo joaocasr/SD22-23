@@ -115,7 +115,7 @@ public class Menu {
         }
 
         if (option < 0 || option > this.options.size()) {
-            System.out.print("\nOpção inválida! Tente outra vez...");
+            System.out.print("\nOpção inválida! Tente outra vez...\n");
             option = -1;
         }
 

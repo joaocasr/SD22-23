@@ -61,7 +61,6 @@ public class TextUI {
         });
         t.start();
         t.join();
-
     }
 
     public void efetuarRegisto() throws InterruptedException {

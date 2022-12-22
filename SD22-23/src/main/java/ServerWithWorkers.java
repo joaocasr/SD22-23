@@ -1,5 +1,6 @@
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,10 +79,13 @@ public class ServerWithWorkers {
                         }
                         else if(frame.tag == 4){
                             String[] info = data.split(";");
-                            System.out.println(info[0] + "," + info[1]);
-                            double custo = mapa.trataEstacionamento(info[0],info[1]);
+                            System.out.println("tag4"+info[0] + "," + info[1]);
                             int recompensa = mapa.devolveRecompensa(info[0],info[1]);
-                            String response = "Estacionamento efetuado com sucesso!\n O custo da viagem é de"+custo+".\nRecompensa:"+recompensa;
+                            //System.out.println(recompensa);
+                            double custo = mapa.calculaCusto(info[0],info[1]); //reserva local
+                            DecimalFormat decimalFormat = new DecimalFormat("0.00");
+                            //System.out.println(custo+"eur");
+                            String response = "Estacionamento efetuado com sucesso!\nCusto da viagem:"+decimalFormat.format(custo)+"€.\nRecompensa:"+recompensa+"€";
                             c.send(frame.tag,response.getBytes());
 
                         }else if(frame.tag == 5){
@@ -89,9 +93,12 @@ public class ServerWithWorkers {
                             System.out.println(info[0] + "," + info[1]);
                             String localcodigo = mapa.tratareserva(info[0], Integer.parseInt(info[1]));
                             System.out.println(localcodigo);
-                            String local = localcodigo.split(";")[1];
-                            String codigo = localcodigo.split(";")[0];
-                            String response= "Local: "+local+" Código de Reserva:"+codigo;
+                            String response="";
+                            if(!localcodigo.equals("erro de insucesso -1")) {
+                                String local = localcodigo.split(";")[1];
+                                String codigo = localcodigo.split(";")[0];
+                                response = "Local: " + local + " \nCódigo de Reserva:" + codigo;
+                            }else response = localcodigo;
                             c.send(frame.tag,response.getBytes());
                         }
                     }

@@ -83,6 +83,24 @@ public class Local {
         }
     }
 
+    public void removeLivre(Trotinete t){
+        try{
+            l.lock();
+            getAllTrotinetesLivres().remove(t);
+        }finally {
+            l.unlock();
+        }
+    }
+
+    public void addLivre(Trotinete t){
+        try{
+            l.lock();
+            getAllTrotinetesLivres().add(t);
+        }finally {
+            l.unlock();
+        }
+    }
+
     public List<Trotinete> getAllTrotinetes(){
         try {
             l.lock();
