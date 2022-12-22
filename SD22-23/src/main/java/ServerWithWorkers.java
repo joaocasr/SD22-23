@@ -8,14 +8,13 @@ public class ServerWithWorkers {
     private static final Map<String,TaggedConnection> allUsersConnections=new HashMap<>();
     private static UsersFacade users;
     private static Mapa mapa;
-    private static Reserva reservas;
 
     public static void main(String[] args) throws Exception {
         System.out.println("Executing...");
         ServerSocket ss = new ServerSocket(12345);
         users = new UsersFacade();
         mapa = new Mapa();
-        reservas = new Reserva();
+
         while(true) {
             System.out.println("Running...");
             Socket s = ss.accept();
@@ -80,9 +79,19 @@ public class ServerWithWorkers {
                         else if(frame.tag == 4){
                             String[] info = data.split(";");
                             System.out.println(info[0] + "," + info[1]);
-                            double custo = mapa.trataEstacionamento(info[0],info[1],reservas);
-                            int recompensa = mapa.devolveRecompensa(info[0],info[1],reservas);
+                            double custo = mapa.trataEstacionamento(info[0],info[1]);
+                            int recompensa = mapa.devolveRecompensa(info[0],info[1]);
                             String response = "Estacionamento efetuado com sucesso!\n O custo da viagem é de"+custo+".\nRecompensa:"+recompensa;
+                            c.send(frame.tag,response.getBytes());
+
+                        }else if(frame.tag == 5){
+                            String[] info = data.split(";");
+                            System.out.println(info[0] + "," + info[1]);
+                            String localcodigo = mapa.tratareserva(info[0], Integer.parseInt(info[1]));
+                            System.out.println(localcodigo);
+                            String local = localcodigo.split(";")[1];
+                            String codigo = localcodigo.split(";")[0];
+                            String response= "Local: "+local+" Código de Reserva:"+codigo;
                             c.send(frame.tag,response.getBytes());
                         }
                     }

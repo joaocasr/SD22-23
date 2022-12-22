@@ -21,6 +21,9 @@ public class Mapa {
     private ReentrantLock l = new ReentrantLock();
     private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private Map<String,Integer> recompensas = new HashMap<>();
+    private Map<String,String> reservas = new HashMap<>(); // cod.reserva-> cod.trotinete
+    private Map<String, LocalDateTime> tempoReservas = new HashMap<>();//cod.reserva->tempo
+
 
     public Mapa() throws FileNotFoundException {
         int N = this.size = 20;
@@ -44,12 +47,49 @@ public class Mapa {
         }
     }
 
+    /**RESERVAS*/
+
+    public String geracodigoreserva(Trotinete t, String origem) {
+        return t.getCodigo() + origem;
+    }
+
+    public String tratareserva(String origem, int distancia) {
+        Trotinete t = null;
+        String localcodigo="";
+
+        List<Local> locais = new ArrayList<>(calculaProximidades(origem, distancia));
+
+        double aux = (double) distancia;
+        Local laux = null;
+        boolean control = false;
+
+        for (Local l : locais) {
+            if (calculaDistancia(origem, l.getName()) < aux) {
+                if (l.getAllTrotinetesLivres().size() != 0) {
+                    t = l.getAllTrotinetesLivres().get(1);
+                    aux = calculaDistancia(origem, l.getName());
+                    laux = l;
+                    control = true;
+                }
+            }
+        }
+        if(control) {
+            t.setOcupada();
+            String codigoreserva = geracodigoreserva(t,origem);
+            reservas.put(codigoreserva,t.getCodigo());
+            tempoReservas.put(codigoreserva,LocalDateTime.now());
+            localcodigo=geracodigoreserva(t,origem)+";"+laux.getName();
+        }else{
+            localcodigo = "erro -1";
+        }
+        return localcodigo;
+    }
+
     public void distribuicaoAleatoria(Trotinete t){
         int x = (int)(Math.random()*(20));
         int y = (int)(Math.random()*(20));
         mapa[x][y].adicionaTrotinete(t);
     }
-
 
     public Local getLocal(int x,int y){
         return this.mapa[x][y];
@@ -150,20 +190,20 @@ public class Mapa {
     }
 
 
-    public double trataEstacionamento(String codreserva,String local,Reserva reserva){
+    public double trataEstacionamento(String codreserva,String local){
         Local chegada = getLocal(local);
-        String codigo = reserva.getReservas().get(codreserva);//codigo trotinete
+        String codigo = reservas.get(codreserva);//codigo trotinete
         Local partida = getLocal(codigo);
         trotinetes.stream().filter(x->x.getCodigo().equals(codigo)).findFirst().get().setlivre();
-        LocalDateTime beginTime = reserva.getTempoReservas().get(codreserva);
+        LocalDateTime beginTime = tempoReservas.get(codreserva);
         long time = ChronoUnit.SECONDS.between(LocalDateTime.now(),beginTime);
         double distancia = calculaDistancia(partida.getName(),chegada.getName());
         return time * distancia;
     }
 
-    public int devolveRecompensa(String codreserva,String local,Reserva reserva){
+    public int devolveRecompensa(String codreserva,String local){
         Local chegada = getLocal(local);
-        String codigo = reserva.getReservas().get(codreserva);//codigo trotinete
+        String codigo = reservas.get(codreserva);//codigo trotinete
         Local partida = getLocal(codigo);
         String par = chegada.getName()+"-"+partida.getName();
         return this.recompensas.get(par);
