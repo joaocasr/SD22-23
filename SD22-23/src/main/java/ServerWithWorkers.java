@@ -1,15 +1,22 @@
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerWithWorkers {
-    private static final Map<String,TaggedConnection> allUsersConnections=new HashMap<>();
+    private static final Map<String,TaggedConnection> ALL_USER_CONNECTIONS = new HashMap<>();
     private static UsersFacade users;
     private static Mapa mapa;
+    private static ReadWriteLock readWriteLockUsers = new ReentrantReadWriteLock();
+    private static ReadWriteLock readWriteLockTrotinetes = new ReentrantReadWriteLock();
+    private static Condition reward = readWriteLockTrotinetes.writeLock().newCondition();
+    private static int wait;
+
+    // TODO: Vamos ter de muita coisa com os locks! Eu depois falo melhor com vocês no Discord
 
     public static void main(String[] args) throws Exception {
         System.out.println("Executing...");
@@ -17,8 +24,29 @@ public class ServerWithWorkers {
         users = new UsersFacade();
         mapa = new Mapa();
 
+        new Thread(() -> {
+            while (true) {
+                try {
+                    readWriteLockTrotinetes.writeLock().lock();
+                    mapa.initTrotLivres();
+                    mapa.geraRecompensas();
+                    wait = 1;
+                }
+                finally {
+                    readWriteLockTrotinetes.writeLock().unlock();
+                }
+
+                while (wait == 1) {
+                    try {
+                        reward.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+
         while(true) {
-            System.out.println("Running...");
             Socket s = ss.accept();
             TaggedConnection c = new TaggedConnection(s);
 
@@ -29,28 +57,25 @@ public class ServerWithWorkers {
                         TaggedConnection.Frame frame = c.receive();
                         int tag = frame.tag;
                         String data = new String(frame.data);
-                        if(frame.tag==0){
-                            String ola = "notificacao";
-                            c.send(frame.tag,ola.getBytes());
-                        }
+                        if(frame.tag==0){}
                         else if (frame.tag == 1) {      //LOGIN
 
                             String[] info = data.split(";");
                             System.out.println(info[0]+","+info[1]);
                             if(!users.existeUser(info[0])){
                                 System.out.println(users.existeUser(info[0]));
-                                allUsersConnections.put(info[0],c);
+                                ALL_USER_CONNECTIONS.put(info[0],c);
                                 byte[] msg = new byte[50];
                                 msg = "A conta não existe!".getBytes();
                                 c.send(frame.tag, msg);
                             }
                             else if(users.login(info[0],info[1])){
-                                allUsersConnections.put(info[0],c);
+                                ALL_USER_CONNECTIONS.put(info[0],c);
                                 byte[] msg = new byte[50];
                                 msg = "Login efetuado com sucesso!".getBytes();
                                 c.send(frame.tag, msg);
                             }else {
-                                allUsersConnections.put(info[0],c);
+                                ALL_USER_CONNECTIONS.put(info[0],c);
                                 byte[] msg = new byte[50];
                                 msg = "A password ou o username estão incorretos!".getBytes();
                                 c.send(frame.tag, msg);
@@ -59,12 +84,12 @@ public class ServerWithWorkers {
 
                             String[] info = data.split(";");
                             if(users.registarUser(info[0],info[1])){
-                                allUsersConnections.put(info[0],c);
+                                ALL_USER_CONNECTIONS.put(info[0],c);
                                 byte[] msg = new byte[50];
                                 msg = "A conta foi registada com sucesso!".getBytes();
                                 c.send(frame.tag, msg);
                             }else{
-                                allUsersConnections.put(info[0],c);
+                                ALL_USER_CONNECTIONS.put(info[0],c);
                                 byte[] msg = new byte[50];
                                 msg = "Já existe uma conta com o mesmo username.".getBytes();
                                 c.send(frame.tag, msg);
@@ -81,35 +106,12 @@ public class ServerWithWorkers {
                                 c.send(frame.tag, tabela.getBytes());
                             }
                         }
-                        else if(frame.tag == 4){
-                            String[] info = data.split(";");
-                            System.out.println("tag4"+info[0] + "," + info[1]);
-                            int recompensa = mapa.devolveRecompensa(info[0],info[1]);
-                            //System.out.println(recompensa);
-                            double custo = mapa.calculaCusto(info[0],info[1]); //reserva local
-                            DecimalFormat decimalFormat = new DecimalFormat("0.00");
-                            //System.out.println(custo+"eur");
-                            String response = "Estacionamento efetuado com sucesso!\nCusto da viagem:"+decimalFormat.format(custo)+"€.\nRecompensa:"+recompensa+"€";
-                            c.send(frame.tag,response.getBytes());
-
-                        }else if(frame.tag == 5){
-                            String[] info = data.split(";");
-                            System.out.println(info[0] + "," + info[1]);
-                            String localcodigo = mapa.tratareserva(info[0], Integer.parseInt(info[1]));
-                            System.out.println(localcodigo);
-                            String response="";
-                            if(!localcodigo.equals("erro de insucesso -1")) {
-                                String local = localcodigo.split(";")[1];
-                                String codigo = localcodigo.split(";")[0];
-                                response = "Local: " + local + " \nCódigo de Reserva:" + codigo;
-                            }else response = localcodigo;
-                            c.send(frame.tag,response.getBytes());
-                        }
                     }
                 } catch (Exception e) {
 
                 }
             };
+
             new Thread(worker).start();
         }
 
