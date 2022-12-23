@@ -28,15 +28,6 @@ public class Trotinete {
         }
     }
 
-    public void setOcupada(){
-        try{
-            reentrantLock.lock();
-            this.livre=false;
-        }finally {
-            reentrantLock.unlock();
-        }
-    }
-
     public String getCodigo() {
         return codigo;
     }
