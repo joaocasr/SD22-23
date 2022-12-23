@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DecimalFormat;
@@ -28,7 +29,10 @@ public class ServerWithWorkers {
                         TaggedConnection.Frame frame = c.receive();
                         int tag = frame.tag;
                         String data = new String(frame.data);
-                        if(frame.tag==0){}
+                        if(frame.tag==0){
+                            String ola = "notificacao";
+                            c.send(frame.tag,ola.getBytes());
+                        }
                         else if (frame.tag == 1) {      //LOGIN
 
                             String[] info = data.split(";");
@@ -106,7 +110,6 @@ public class ServerWithWorkers {
 
                 }
             };
-
             new Thread(worker).start();
         }
 
