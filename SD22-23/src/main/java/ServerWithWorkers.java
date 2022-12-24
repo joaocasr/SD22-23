@@ -10,6 +10,7 @@ public class ServerWithWorkers {
     private static final Map<String,TaggedConnection> allUsersConnections=new HashMap<>();
     private static UsersFacade users;
     private static Mapa mapa;
+    private static Thread threadnot=null;
 
     public static void main(String[] args) throws Exception {
         System.out.println("Executing...");
@@ -30,11 +31,22 @@ public class ServerWithWorkers {
                         int tag = frame.tag;
                         String data = new String(frame.data);
                         if(frame.tag==0){
-                            String ola = "notificacao";
-                            c.send(frame.tag,ola.getBytes());
+                            Thread thread = new Thread(()->{
+                                String[] info = data.split(";");
+                                System.out.println("data "+info[0]+" >< "+info[1]);
+                                String response = mapa.findRecompensas(info[0], Integer.parseInt(info[1]));
+                                try {
+                                    c.send(0, response.getBytes());
+                                }catch (IOException e){
+                                    e.printStackTrace();
+                                }
+                            });
+                            if(threadnot!=null) threadnot.interrupt();
+                            threadnot=thread;
+                            thread.start();
+
                         }
                         else if (frame.tag == 1) {      //LOGIN
-
                             String[] info = data.split(";");
                             System.out.println(info[0]+","+info[1]);
                             if(!users.existeUser(info[0])){

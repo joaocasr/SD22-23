@@ -151,7 +151,7 @@ public class Mapa {
         System.out.println("inicio:"+inicio);
         System.out.println("fim:"+fim);
         int recompensa=0;
-        if(l1.getAllTrotinetesLivres().size()<=0){
+        if(l1.getAllTrotinetesLivres().size()<2){
             System.out.println("FALHOU NA PRIMEIRA CONDICAO");
             System.out.println(l1.getAllTrotinetesLivres().size());
             return recompensa;
@@ -257,6 +257,29 @@ public class Mapa {
         }
         return lines;
     }
+
+    public String findRecompensas(String origem, int distancia) {
+        //Lista com os lugares que são próximos da origem dada uma determinada distância
+        List<Local> proximidades = calculaProximidades(origem, distancia);
+        StringBuilder resposta = new StringBuilder();
+        resposta.append("\n------NOTIFICAÇÃO------\n");
+
+        //está a gerar recompensas no raio com trotinetes disponiveis
+
+        for (Local lugar : proximidades) {
+            if (lugar.getAllTrotinetesLivres().size() == 0)
+                this.recompensas.put(origem + "-" + lugar.getName(), calculaRecompensa(origem, lugar.getName()));
+        }
+
+        System.out.println(this.recompensas);
+
+        for (String local : this.recompensas.keySet())
+            if(local.startsWith(origem) && this.recompensas.get(local)>0)
+                resposta.append(local).append(" - ").append(this.recompensas.get(local).toString()).append('\n');
+        if(resposta.length()==0) resposta.append("De momento não existem recompensas num raio de ").append(distancia).append(" km de ").append(origem);
+        return resposta.toString();
+    }
+
 
     /*
     public String showMenu(){

@@ -68,7 +68,7 @@ public class Menu {
     }
 
     // Método: Execução do menu
-    public void run() throws InterruptedException {
+    public void run(int x) throws InterruptedException {
         int option;
         do {
             show();
@@ -79,6 +79,10 @@ public class Menu {
             else if (option > 0) {
                 this.handlers.get(option - 1).execute();
             }
+            if(x==1){
+                this.handlers.get(5).execute();
+                this.handlers.get(6).execute();
+            }
         } while (this.exit == false);
     }
 
@@ -87,16 +91,17 @@ public class Menu {
     public void show() {
         System.out.println("********************* GESTÃO DE FROTA DE TROTINETES- Braga *********************");
         for (int i = 0; i < this.options.size(); i++) {
-            if(i != (this.options.size()-1)) {
+            if(i==5 || i==6){}
+            else if(i != (this.options.size()-1)) {
                 System.out.print("| * ");
                 System.out.print(i + 1);
                 System.out.print(" -");
                 System.out.print(this.options.get(i));
             }
             if(i == (this.options.size()-1)){
-                System.out.print("| * ");
-                System.out.print(i + 1);
-                System.out.print(" -");
+                if(i!=6) System.out.print("| * ");
+                if(i!=6) System.out.print(i + 1);
+                if(i!=6) System.out.print(" -");
                 System.out.print(this.options.get(i));
                 System.out.print("\n_______________________________________________________________________________");
             }

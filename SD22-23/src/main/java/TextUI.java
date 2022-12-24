@@ -14,6 +14,9 @@ public class TextUI {
     private static int time;
     private static Lock lock = new ReentrantLock();
     private static Condition con = lock.newCondition();
+    private static String local;
+    private static int distancia;
+    private static Thread threadNotificacao;
 
     public TextUI(Demultiplexer demultiplexer){
         this.demultiplexer = demultiplexer;
@@ -26,35 +29,46 @@ public class TextUI {
         menu.setOptions(opcoes);
         menu.setHandlers(1,this::efetuarLogin);
         menu.setHandlers(2,this::efetuarRegisto);
-        menu.run();
+        menu.run(0);
     }
 
     public void MenuSecundario() throws InterruptedException {
         List<String> opcoes = new ArrayList<>();
         opcoes.add("Listagem de trotinetes livres.\n");
         opcoes.add("Efetuar reserva da trotinete mais próxima.\n");
+        opcoes.add("Listagem de recompensas.\n");
         opcoes.add("Estacionamento de trotinete.\n");
         opcoes.add("Ativar Notificacoes.");
+        opcoes.add("");
+        opcoes.add("");
 
-        Thread thread = new Thread(()->{
-            try {
-                trataReceberNotificacoes();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
-        thread.start();
+
         menu.setOptions(opcoes);
         menu.setHandlers(1,this::listarTrotinetesLivres);
         menu.setHandlers(2,this::trataReservas);
-        menu.setHandlers(3,this::estacionamentodeTrotinetes);
-        menu.setHandlers(4,this::ativaNotificacoes);
-        menu.run();
+        menu.setHandlers(3,this::listagemRecompensas);
+        menu.setHandlers(4,this::estacionamentodeTrotinetes);
+        menu.setHandlers(5,this::ativaNotificacoes);
+        menu.setHandlers(6,this::trataReceberNotificacoes);
+        menu.setHandlers(7,this::enviarSIGNAL);
+        menu.run(1);
     }
 
     public void run() throws IOException, InterruptedException {
         Menu();
         demultiplexer.close();
+    }
+
+    public void enviarSIGNAL(){
+        Thread thread = new Thread(()-> {
+            lock.lock();
+            try {
+                con.signalAll();
+            } finally {
+                lock.unlock();
+            }
+        });
+        thread.start();
     }
 
     public void ativaNotificacoes()throws InterruptedException {
@@ -64,12 +78,20 @@ public class TextUI {
                 if(notificacao) {
                     System.out.println("Pretende desativar as notificações?[S/N]");
                     String r = scanner.nextLine();
-                    if(r.equalsIgnoreCase("S")) notificacao=false;
+                    if(r.equalsIgnoreCase("S")){
+                        notificacao=false;
+                        threadNotificacao.interrupt();
+                    }
                 }else{
                     System.out.println("Pretende ativar as notificações?[S/N]");
                     String r = scanner.nextLine();
                     System.out.println("De quanto em quanto tempo pretende receber notificações? (segundos)");
                     time = scanner.nextInt() * 1000;
+                    System.out.println("Insira o lugar atual:");
+                    scanner.nextLine();
+                    local = scanner.nextLine();
+                    System.out.println("Insira a distância do local atual para procurar recompensas:");
+                    distancia = scanner.nextInt();
                     if(r.equalsIgnoreCase("S")) notificacao=true;
                 }
             } catch (Exception e) {
@@ -80,34 +102,38 @@ public class TextUI {
         t.join();
     }
 
-    public static void trataReceberNotificacoes()throws InterruptedException {
+    public void trataReceberNotificacoes() {
+        threadNotificacao= new Thread(()->{
         while (true) {
             //System.out.println("entrou");
             try {
                 lock.lock();
-                while (!spam || !notificacao) {
+                while (!notificacao) {
                     con.await();
-                    //System.out.println("waiting");
                 }
-                //System.out.println("entrou");
-                demultiplexer.send(0, "ola".getBytes());
+                String dados = local + ";" + distancia + ";";
+                //System.out.println("TEST" + dados);
+                demultiplexer.send(0, dados.getBytes());
                 byte[] b = demultiplexer.receive(0);
-                String notificacao = new String(b);
-                System.out.println(notificacao);
-                lock.unlock();
-
+                String response = new String(b);
+                System.out.println(response);
+                Thread.sleep(time);
+            } catch (InterruptedException e) {
+                threadNotificacao.interrupt();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                lock.unlock();
             }
-            Thread.sleep(time);
         }
+        });
+        threadNotificacao.start();
     }
+
 
     public void efetuarLogin() throws InterruptedException {
         Thread t = new Thread(() -> {
             try {
-                lock.lock();
-                spam=false;
                 System.out.println("Insira o username: ");
                 Scanner scanner = new Scanner(System.in);
                 String username = scanner.nextLine();
@@ -119,10 +145,9 @@ public class TextUI {
                 byte [] b = demultiplexer.receive(1);
                 String response = new String(b);
                 System.out.println(response);
-                spam=true;
-                con.signalAll();
-                lock.unlock();
-                if(response.contains("sucesso")) MenuSecundario();
+                if(response.contains("sucesso")){
+                    MenuSecundario();
+                }
         } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -134,8 +159,6 @@ public class TextUI {
     public void efetuarRegisto() throws InterruptedException {
         Thread t = new Thread(() -> {
             try {
-                lock.lock();
-                spam=false;
                 System.out.println("Insira o username: ");
                 Scanner scanner = new Scanner(System.in);
                 String username = scanner.nextLine();
@@ -146,9 +169,6 @@ public class TextUI {
 
                 byte [] b = demultiplexer.receive(2);
                 String response = new String(b);
-                spam=true;
-                con.signalAll();
-                lock.unlock();
                 System.out.println(response);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -161,8 +181,6 @@ public class TextUI {
     public void listarTrotinetesLivres() throws InterruptedException {
         Thread t = new Thread(() -> {
             try {
-                lock.lock();
-                spam = false;
                 System.out.println("Insira o local: ");
                 Scanner scanner = new Scanner(System.in);
                 String local = scanner.nextLine();
@@ -173,9 +191,6 @@ public class TextUI {
 
                 byte [] b = demultiplexer.receive(3);
                 String response = new String(b);
-                spam=true;
-                con.signalAll();
-                lock.unlock();
                 System.out.println(response);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -188,8 +203,6 @@ public class TextUI {
     public void trataReservas() throws InterruptedException{
         Thread t = new Thread(()->{
             try{
-                lock.lock();
-                spam=false;
                 System.out.println("Insira o local:");
                 Scanner scanner = new Scanner(System.in);
                 String local = scanner.nextLine();
@@ -201,9 +214,6 @@ public class TextUI {
                 byte [] b = demultiplexer.receive(5);
                 String response = new String(b);
                 System.out.println(response);
-                spam=true;
-                con.signalAll();
-                lock.unlock();
             }catch (Exception e) {
                 e.printStackTrace();
             }
@@ -215,8 +225,6 @@ public class TextUI {
     public void estacionamentodeTrotinetes() throws InterruptedException{
         Thread t = new Thread(()->{
            try{
-               lock.lock();
-               spam=false;
                System.out.println("Insira o código de reserva:");
                Scanner scanner = new Scanner(System.in);
                String codigo = scanner.nextLine();
@@ -228,9 +236,6 @@ public class TextUI {
                byte [] b = demultiplexer.receive(4);
                String response = new String(b);
                System.out.println(response);
-               spam=true;
-               con.signalAll();
-               lock.unlock();
            }catch (Exception e) {
                e.printStackTrace();
            }
@@ -239,5 +244,6 @@ public class TextUI {
         t.join();
     }
 
+    public void listagemRecompensas(){}
 
 }
