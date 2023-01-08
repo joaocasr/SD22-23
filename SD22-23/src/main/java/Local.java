@@ -17,57 +17,27 @@ public class Local {
     }
 
     public String getName(){
-        try{
-            l.lock();
-            return this.name;
-        }finally {
-            l.unlock();
-        }
+        return this.name;
     }
 
     public void setName(String name){
-        try{
-            l.lock();
-            this.name=name;
-        }finally {
-            l.unlock();
-        }
+        this.name=name;
     }
 
     public int getX() {
-        try{
-            l.lock();
-            return x;
-        }finally {
-            l.unlock();
-        }
+        return x;
     }
 
     public void setX(int x) {
-        try {
-            l.lock();
-            this.x = x;
-        }finally {
-            l.unlock();
-        }
+        this.x = x;
     }
 
     public int getY() {
-        try {
-            l.lock();
-            return y;
-        }finally {
-            l.unlock();
-        }
+        return y;
     }
 
     public void setY(int y) {
-        try {
-            l.lock();
-            this.y = y;
-        }finally {
-            l.unlock();
-        }
+        this.y = y;
     }
 
     public List<Trotinete> getAllTrotinetesLivres(){
@@ -102,32 +72,11 @@ public class Local {
     }
 
     public List<Trotinete> getAllTrotinetes(){
-        try {
-            l.lock();
-            return this.allTrotinetes;
-        }finally {
-            l.unlock();
-        }
+        return this.allTrotinetes;
     }
 
     public void adicionaTrotinete(Trotinete t){
-        try{
-            l.lock();
-            this.allTrotinetes.add(t);
-        }finally {
-            l.unlock();
-        }
-    }
-
-    public void removeTrotinete(String codigo){
-        try{
-            l.lock();
-            for(Trotinete t : allTrotinetes){
-                if(t.getCodigo().equals(codigo)) this.allTrotinetes.remove(t);
-            }
-        }finally {
-            l.unlock();
-        }
+         this.allTrotinetes.add(t);
     }
 
     @Override

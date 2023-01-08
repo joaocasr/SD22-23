@@ -2,30 +2,39 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class UsersFacade {
     private Map<String, User> allUsers;
     ReentrantLock l = new ReentrantLock();
+    ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public UsersFacade(){
         this.allUsers = new HashMap<>();
-        User user = new User("joao","joaopass");
-        this.allUsers.put(user.getUsername(),user);
+        User user1 = new User("joao","joaopass");
+        User user2 = new User("alex","alexpass");
+        User user3 = new User("joel","joelpass");
+
+
+        this.allUsers.put(user1.getUsername(),user1);
+        this.allUsers.put(user2.getUsername(),user2);
+        this.allUsers.put(user3.getUsername(),user3);
+
     }
 
-    //cenario: 2 utilizadores autenticam-se ao mesmo tempo e possuem a mesma password. 1 deles autentica-se mal e outra autentica-se bem
-    //pode acontecer de a conta que introduziu mal a password se autenticar com sucesso ->evitar com locks
+    // lock para questoes de segurança .caso 1 utilizador estiver a tentar a invadir uma conta de outro utilizador inserindo sempre passwords incorretas, pode acontecer
+    // de no mesmo momento o utilizador dessa conta introduzir a sua pass correta e não conseguir entrar e o atacante que introduziu mal a palavra passe conseguiu entrar
 
     public boolean login(String username,String password){
         boolean b = false;
         try {
-            l.lock();
+            lock.writeLock().lock();
             if (this.allUsers.get(username).getPassword().equals(password)) {
                 b=true;
             }
             return b;
         }finally {
-            l.unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -53,7 +62,7 @@ public class UsersFacade {
             }
             return b;
         }finally {
-            l.unlock();
+            lock.writeLock().lock();
         }
     }
 

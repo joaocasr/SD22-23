@@ -66,9 +66,8 @@ public class Mapa {
         double aux = (double) distancia;
         Local laux = null;
         boolean control = false;
-
-        //try {
-        //    readWriteLock.readLock().lock();
+        try {
+            readWriteLock.readLock().lock();
             for (Local l : locais) {
                 if (calculaDistancia(origem, l.getName()) <= aux) {
                     if (l.getAllTrotinetesLivres().size() != 0) {
@@ -90,9 +89,9 @@ public class Mapa {
                 localcodigo = "erro de insucesso -1";
             }
             return localcodigo;
-    //    }finally {
-    //        readWriteLock.readLock().lock();
-    //   }
+        }finally {
+            readWriteLock.readLock().lock();
+       }
     }
 
     public void distribuicaoAleatoria(Trotinete t){
@@ -281,23 +280,7 @@ public class Mapa {
     }
 
 
-    /*
-    public String showMenu(){
-        StringBuilder tabela = new StringBuilder();
-        tabela.append("------------------------------------------------------------------------------------------------------------------------------------------");
-        tabela.append("|                   LOCAL                            |            COORDENADAS             |             TROTINETES                        |");
-        tabela.append("------------------------------------------------------------------------------------------------------------------------------------------");
-        int i;
-        int j;
-        for(i=0;i<20;i++){
-            for(j=0;j<20;j++){
-                tabela.append("|").append(mapa[i][j].getName()).append("                         | x=").append(mapa[i][j].getX()).append(", y=").append(mapa[i][j].getY()).append("|                          Trotinetes: ").append(mapa[i][j].getAllTrotinetes()).append(" ");
-                tabela.append("------------------------------------------------------------------------------------------------------------------------------------------");
-            }
-        }
-        return tabela.toString();
-    }*/
-
+    //funcionalidade 1 - trotinetes livres
     public String showDisponiveis(List<Local> locais){
         StringBuilder tabela = new StringBuilder();
         int k=0;

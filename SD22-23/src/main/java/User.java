@@ -1,10 +1,8 @@
 import java.io.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class User implements Serializable {
     private String username;
     private String password;
-    ReentrantLock l = new ReentrantLock();
 
     public User(String username, String password) {
         this.username = username;
@@ -17,39 +15,19 @@ public class User implements Serializable {
     }
 
     public String getUsername() {
-        try {
-            l.lock();
-            return username;
-        }finally {
-            l.unlock();
-        }
+        return username;
     }
 
     public void setUsername(String username) {
-        try {
-            l.lock();
-            this.username = username;
-        }finally {
-            l.unlock();
-        }
+        this.username = username;
     }
 
     public String getPassword() {
-        try {
-            l.lock();
-            return password;
-        }finally {
-            l.unlock();
-        }
+        return password;
     }
 
     public void setPassword(String password) {
-        try {
-            l.lock();
-            this.password = password;
-        }finally {
-            l.unlock();
-        }
+        this.password = password;
     }
 
 
