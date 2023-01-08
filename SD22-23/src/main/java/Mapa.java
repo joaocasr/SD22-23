@@ -67,7 +67,7 @@ public class Mapa {
         Local laux = null;
         boolean control = false;
         try {
-            readWriteLock.readLock().lock();
+            l.lock();
             for (Local l : locais) {
                 if (calculaDistancia(origem, l.getName()) <= aux) {
                     if (l.getAllTrotinetesLivres().size() != 0) {
@@ -90,7 +90,7 @@ public class Mapa {
             }
             return localcodigo;
         }finally {
-            readWriteLock.readLock().lock();
+            l.unlock();
        }
     }
 

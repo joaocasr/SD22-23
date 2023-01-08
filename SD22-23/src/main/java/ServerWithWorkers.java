@@ -56,6 +56,7 @@ public class ServerWithWorkers {
                             else if(users.login(info[0],info[1])){
                                 byte[] msg = new byte[50];
                                 msg = "Login efetuado com sucesso!".getBytes();
+                                System.out.println("A enviar confirmacao");
                                 c.send(frame.tag, msg);
                             }else {
                                 byte[] msg = new byte[50];
