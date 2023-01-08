@@ -68,14 +68,12 @@ public class Mapa {
         boolean control = false;
         try {
             l.lock();
-            for (Local l : locais) {
-                if (calculaDistancia(origem, l.getName()) <= aux) {
-                    if (l.getAllTrotinetesLivres().size() != 0) {
-                        t = l.getAllTrotinetesLivres().get(0);
-                        t.setOcupada();
-                        l.removeLivre(t);
-                        aux = calculaDistancia(origem, l.getName());
-                        laux = l;
+            for (Local local : locais) {
+                if (calculaDistancia(origem, local.getName()) <= aux) {
+                    if (local.getAllTrotinetesLivres().size() != 0) {
+                        t = local.getAllTrotinetesLivres().get(0);
+                        aux = calculaDistancia(origem, local.getName());
+                        laux = local;
                         control = true;
                     }
                 }
@@ -85,6 +83,8 @@ public class Mapa {
                 reservas.put(codigoreserva, t.getCodigo()+";"+laux.getName());
                 tempoReservas.put(codigoreserva, LocalDateTime.now());
                 localcodigo = geracodigoreserva(t) + ";" + laux.getName();
+                t.setOcupada();
+                laux.removeLivre(t);
             } else {
                 localcodigo = "erro de insucesso -1";
             }
