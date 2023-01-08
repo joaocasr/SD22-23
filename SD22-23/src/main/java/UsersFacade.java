@@ -7,7 +7,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class UsersFacade {
     private Map<String, User> allUsers;
     private static ReentrantLock l;
-    private static ReentrantReadWriteLock lock;
 
     public UsersFacade(){
         this.allUsers = new HashMap<>();
@@ -20,7 +19,6 @@ public class UsersFacade {
         this.allUsers.put(user2.getUsername(),user2);
         this.allUsers.put(user3.getUsername(),user3);
         l = new ReentrantLock();
-        lock =  new ReentrantReadWriteLock();
     }
 
     // lock para questoes de segurança .caso 1 utilizador estiver a tentar a invadir uma conta de outro utilizador inserindo sempre passwords incorretas, pode acontecer

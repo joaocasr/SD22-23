@@ -115,7 +115,7 @@ public class Mapa {
         return l;
     }
 
-    public Local getLocalTrotinete(String codigo){
+/*    public Local getLocalTrotinete(String codigo){
         int N=20;
         Local l = null;
         for (int i = 0; i < N; i++) {
@@ -125,7 +125,7 @@ public class Mapa {
         }
         return l;
     }
-
+*/
     public Local[][] getMapa() {
         Local[][] m = new Local[this.size][this.size];
         try {
@@ -180,24 +180,19 @@ public class Mapa {
 
     public double calculaDistancia(String Origem, String Destino){
         int x1=0,x2=0,y1=0,y2=0;
-        try {
-            l.lock();
-            for (int i = 0; i < this.size; i++) {
-                for (int j = 0; j < this.size; j++) {
-                    if (this.mapa[i][j].getName().equals(Origem)) {
-                        x1 = this.mapa[i][j].getX();
-                        y1 = this.mapa[i][j].getY();
-                    }
-                    if (this.mapa[i][j].getName().equals(Destino)) {
-                        x2 = this.mapa[i][j].getX();
-                        y2 = this.mapa[i][j].getY();
-                    }
+        for (int i = 0; i < this.size; i++) {
+            for (int j = 0; j < this.size; j++) {
+                if (this.mapa[i][j].getName().equals(Origem)) {
+                    x1 = this.mapa[i][j].getX();
+                    y1 = this.mapa[i][j].getY();
+                }
+                if (this.mapa[i][j].getName().equals(Destino)) {
+                    x2 = this.mapa[i][j].getX();
+                    y2 = this.mapa[i][j].getY();
                 }
             }
-            return (Math.abs(x1-x2)+Math.abs(y1-y2));
-        }finally {
-            l.unlock();
         }
+        return (Math.abs(x1-x2)+Math.abs(y1-y2));
     }
 
     public List<Local> calculaProximidades(String origem, int distancia){

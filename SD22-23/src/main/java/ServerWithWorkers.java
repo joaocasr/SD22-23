@@ -87,7 +87,7 @@ public class ServerWithWorkers {
                                 c.send(frame.tag, tabela.getBytes());
                             }
                         }
-                        else if(frame.tag == 4){
+                        else if(frame.tag == 4){    //estacionar
                             String[] info = data.split(";");
                             System.out.println("tag4"+info[0] + "," + info[1]);
                             int recompensa = mapa.devolveRecompensa(info[0],info[1]);
