@@ -265,12 +265,14 @@ public class Mapa {
                 this.recompensas.put(origem + "-" + lugar.getName(), calculaRecompensa(origem, lugar.getName()));
         }
 
-        System.out.println(this.recompensas);
-
+        //System.out.println(this.recompensas);
+        int j=0;
         for (String local : this.recompensas.keySet())
-            if(local.startsWith(origem) && this.recompensas.get(local)>0)
+            if(local.startsWith(origem) && this.recompensas.get(local)>0) {
                 resposta.append(local).append(" - ").append(this.recompensas.get(local).toString()).append('\n');
-        if(resposta.length()==0) resposta.append("De momento não existem recompensas num raio de ").append(distancia).append(" km de ").append(origem);
+                j++;
+            }
+        if(j==0) resposta.append("De momento não existem recompensas num raio de ").append(distancia).append(" km de ").append(origem);
         return resposta.toString();
     }
 

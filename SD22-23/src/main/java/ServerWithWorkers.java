@@ -32,6 +32,7 @@ public class ServerWithWorkers {
                                 String[] info = data.split(";");
                                 System.out.println("data "+info[0]+" >< "+info[1]);
                                 String response = mapa.findRecompensas(info[0], Integer.parseInt(info[1]));
+                                System.out.println(response);
                                 try {
                                     c.send(0, response.getBytes());
                                 }catch (IOException e){
