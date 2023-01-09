@@ -59,19 +59,7 @@ public class TextUI {
         demultiplexer.close();
     }
 
-    public void enviarSIGNAL(){
-        Thread thread = new Thread(()-> {
-            lock.lock();
-            try {
-                con.signalAll();
-            } finally {
-                lock.unlock();
-            }
-        });
-        thread.start();
-    }
-
-    public void ativaNotificacoes()throws InterruptedException {
+    public void ativaNotificacoes(){
         Thread t = new Thread(() -> {
             try {
                 Scanner scanner = new Scanner(System.in);
@@ -80,7 +68,6 @@ public class TextUI {
                     String r = scanner.nextLine();
                     if(r.equalsIgnoreCase("S")){
                         notificacao=false;
-                        threadNotificacao.interrupt();
                     }
                 }else{
                     System.out.println("Pretende ativar as notificações?[S/N]");
@@ -99,7 +86,11 @@ public class TextUI {
             }
         });
         t.start();
-        t.join();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void trataReceberNotificacoes() {
@@ -118,9 +109,7 @@ public class TextUI {
                 String response = new String(b);
                 System.out.println(response);
                 Thread.sleep(time);
-            } catch (InterruptedException e) {
-                threadNotificacao.interrupt();
-            } catch (Exception e) {
+            }catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 lock.unlock();
@@ -131,137 +120,125 @@ public class TextUI {
     }
 
 
-    public void efetuarLogin() throws InterruptedException {
-        Thread t = new Thread(() -> {
-            try {
-                System.out.println("Insira o username: ");
-                Scanner scanner = new Scanner(System.in);
-                String username = scanner.nextLine();
-                System.out.println("Insira a password: ");
-                String password = scanner.nextLine();
-                String dados = username+";"+password+";";
-                demultiplexer.send(1,dados.getBytes());
+    public void efetuarLogin() {
+        try {
+            System.out.println("Insira o username: ");
+            Scanner scanner = new Scanner(System.in);
+            String username = scanner.nextLine();
+            System.out.println("Insira a password: ");
+            String password = scanner.nextLine();
+            String dados = username+";"+password+";";
+            demultiplexer.send(1,dados.getBytes());
 
-                byte [] b = demultiplexer.receive(1);
-                String response = new String(b);
-                System.out.println(response);
-                if(response.contains("sucesso")){
-                    MenuSecundario();
-                }
+            byte [] b = demultiplexer.receive(1);
+            String response = new String(b);
+            System.out.println(response);
+            if(response.contains("sucesso")){
+                MenuSecundario();
+            }
         } catch (Exception e) {
                 e.printStackTrace();
-            }
-        });
-        t.start();
-        t.join();
+        }
     }
 
-    public void efetuarRegisto() throws InterruptedException {
-        Thread t = new Thread(() -> {
+    public void efetuarRegisto() {
+        try {
+            System.out.println("Insira o username: ");
+            Scanner scanner = new Scanner(System.in);
+            String username = scanner.nextLine();
+            System.out.println("Insira a password: ");
+            String password = scanner.nextLine();
+            String dados = username+";"+password+";";
+            demultiplexer.send(2,dados.getBytes());
+
+            byte [] b = demultiplexer.receive(2);
+            String response = new String(b);
+            System.out.println(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void listarTrotinetesLivres()  {
+        try {
+            System.out.println("Insira o local: ");
+            Scanner scanner = new Scanner(System.in);
+            String local = scanner.nextLine();
+            System.out.println("Insira o raio de distância (km): ");
+            int dist = scanner.nextInt();
+            String dados = local+";"+dist+";";
+            demultiplexer.send(3,dados.getBytes());
+
+            byte [] b = demultiplexer.receive(3);
+            String response = new String(b);
+            System.out.println(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void trataReservas() {
+        try{
+            System.out.println("Insira o local:");
+            Scanner scanner = new Scanner(System.in);
+            String local = scanner.nextLine();
+            System.out.println("Insira o raio em km:");
+            int distancia = scanner.nextInt();
+            String dados = local+";"+distancia+";";
+            demultiplexer.send(5,dados.getBytes());
+
+            byte [] b = demultiplexer.receive(5);
+            String response = new String(b);
+            System.out.println(response);
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void estacionamentodeTrotinetes() {
+        try{
+            System.out.println("Insira o código de reserva:");
+            Scanner scanner = new Scanner(System.in);
+            String codigo = scanner.nextLine();
+            System.out.println("Insira o local que estacionou:");
+            String local = scanner.nextLine();
+            String dados = codigo+";"+local+";";
+            demultiplexer.send(4,dados.getBytes());
+
+            byte [] b = demultiplexer.receive(4);
+            String response = new String(b);
+            System.out.println(response);
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void listagemRecompensas() {
+        try {
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Insira o lugar atual:");
+            String local = scanner.nextLine();
+            System.out.println("Insira a distância do local atual para procurar recompensas:");
+            int dist = scanner.nextInt();
+            String dados = local+";"+dist+";";
+            demultiplexer.send(6,dados.getBytes());
+            byte[] b = demultiplexer.receive(6);
+            String response = new String(b);
+            System.out.println(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void enviarSIGNAL(){
+        Thread thread = new Thread(()-> {
+            lock.lock();
             try {
-                System.out.println("Insira o username: ");
-                Scanner scanner = new Scanner(System.in);
-                String username = scanner.nextLine();
-                System.out.println("Insira a password: ");
-                String password = scanner.nextLine();
-                String dados = username+";"+password+";";
-                demultiplexer.send(2,dados.getBytes());
-
-                byte [] b = demultiplexer.receive(2);
-                String response = new String(b);
-                System.out.println(response);
-            } catch (Exception e) {
-                e.printStackTrace();
+                con.signalAll();
+            } finally {
+                lock.unlock();
             }
         });
-        t.start();
-        t.join();
-    }
-
-    public void listarTrotinetesLivres() throws InterruptedException {
-        Thread t = new Thread(() -> {
-            try {
-                System.out.println("Insira o local: ");
-                Scanner scanner = new Scanner(System.in);
-                String local = scanner.nextLine();
-                System.out.println("Insira o raio de distância (km): ");
-                int dist = scanner.nextInt();
-                String dados = local+";"+dist+";";
-                demultiplexer.send(3,dados.getBytes());
-
-                byte [] b = demultiplexer.receive(3);
-                String response = new String(b);
-                System.out.println(response);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        t.start();
-        t.join();
-    }
-
-    public void trataReservas() throws InterruptedException{
-        Thread t = new Thread(()->{
-            try{
-                System.out.println("Insira o local:");
-                Scanner scanner = new Scanner(System.in);
-                String local = scanner.nextLine();
-                System.out.println("Insira o raio em km:");
-                int distancia = scanner.nextInt();
-                String dados = local+";"+distancia+";";
-                demultiplexer.send(5,dados.getBytes());
-
-                byte [] b = demultiplexer.receive(5);
-                String response = new String(b);
-                System.out.println(response);
-            }catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        t.start();
-        t.join();
-    }
-
-    public void estacionamentodeTrotinetes() throws InterruptedException{
-        Thread t = new Thread(()->{
-           try{
-               System.out.println("Insira o código de reserva:");
-               Scanner scanner = new Scanner(System.in);
-               String codigo = scanner.nextLine();
-               System.out.println("Insira o local que estacionou:");
-               String local = scanner.nextLine();
-               String dados = codigo+";"+local+";";
-               demultiplexer.send(4,dados.getBytes());
-
-               byte [] b = demultiplexer.receive(4);
-               String response = new String(b);
-               System.out.println(response);
-           }catch (Exception e) {
-               e.printStackTrace();
-           }
-        });
-        t.start();
-        t.join();
-    }
-
-    public void listagemRecompensas() throws InterruptedException {
-        Thread t = new Thread(()->{
-            try {
-                Scanner scanner = new Scanner(System.in);
-                System.out.println("Insira o lugar atual:");
-                String local = scanner.nextLine();
-                System.out.println("Insira a distância do local atual para procurar recompensas:");
-                int dist = scanner.nextInt();
-                String dados = local+";"+dist+";";
-                demultiplexer.send(6,dados.getBytes());
-                byte[] b = demultiplexer.receive(6);
-                String response = new String(b);
-                System.out.println(response);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        t.start();
-        t.join();
+        thread.start();
     }
 }

@@ -163,17 +163,7 @@ public class Mapa {
     }
 
 
-    /*    public Local getLocalTrotinete(String codigo){
-        int N=20;
-        Local l = null;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if(mapa[i][j].getAllTrotinetes().stream().anyMatch(x -> x.getCodigo().equals(codigo))) l= mapa[i][j];
-            }
-        }
-        return l;
-    }
-*/
+
     public Local[][] getMapa() {
         Local[][] m = new Local[this.size][this.size];
         try {
@@ -191,14 +181,15 @@ public class Mapa {
     }
 
 
-    public void geraRecompensas() {
+    public void geraRecompensas(boolean estacionamento) {
         List<Local> surroundings;
         String origem, destino;
         int valorOrigem, valorDestino, aux = 1, coords, trotinetes = 0, x, y, D = 1;
+
         try {
             readWriteLock.writeLock().lock();
-            //recompensas = new HashMap<>();
-            for (int i = 0; i < trotLivres.size(); i++) {
+            if (estacionamento) recompensas.clear();
+            for (int i = 0; i < trotLivres.size();) {
                 origem = trotLivres.get(i).getKey();
                 valorOrigem = trotLivres.get(i).getValue();
                 destino = trotLivres.get(trotLivres.size() - aux).getKey();
@@ -206,10 +197,7 @@ public class Mapa {
 
                 if (valorOrigem > 1) {
                     if (valorDestino == 0) {
-                        coords = getCoords(destino);
-                        x = coords / 10;
-                        y = coords % 10;
-                        surroundings = getSurrounding(x, y, D);
+                        surroundings = calculaProximidades(destino,D);
                         for (Local l : surroundings) {
                             trotinetes += l.getAllTrotinetesLivres().size();
                         }
@@ -224,10 +212,13 @@ public class Mapa {
                             }
                             if (notIn) recompensas.get(origem).add(new Recompensa(origem,destino,calculaDistancia(origem,destino)));
                         }
-                        else i--;
                         aux++;
                         trotinetes = 0;
-                    } else break;
+                    }
+                    else {
+                        aux = 1;
+                        i++;
+                    }
                 } else break;
             }
         }
@@ -235,6 +226,7 @@ public class Mapa {
             readWriteLock.writeLock().unlock();
         }
     }
+
 
     public String getRecompensaProximidade(String origem,int dist) {
         //List<Recompensa> recompensasProx = new ArrayList<>();
@@ -245,11 +237,11 @@ public class Mapa {
         try {
             readWriteLock.readLock().lock();
             for (Local local : proximidade) {
-                if (recompensas.containsKey(origem)) {
+                if (recompensas.containsKey(local.getName())) {
                     //recompensasProx.add(recompensas.get(local.getName()));
                     aux++;
-                    for (Recompensa recompensa : recompensas.get(origem)) {
-                        resposta.append(origem).append(" - ").append(recompensa.getEnd()).append(" -> recompensa: ").append(recompensa.getReward()).append('\n');
+                    for (Recompensa recompensa : recompensas.get(local.getName())) {
+                        resposta.append(local.getName()).append(" - ").append(recompensa.getEnd()).append(" -> recompensa: ").append(recompensa.getReward()).append('\n');
                     }
                 }
             }
@@ -262,43 +254,7 @@ public class Mapa {
             readWriteLock.readLock().unlock();
         }
     }
-/*
-    public int calculaRecompensa(String inicio,String fim){
-        //calcular a partir de que raio se encontram trotinetes livres
-        System.out.println("CALCULO DE RECOMPENSA");
-        Local l1 = getLocal(inicio);
-        Local l2 = getLocal(fim);
-        System.out.println("inicio:"+inicio);
-        System.out.println("fim:"+fim);
-        int recompensa=0;
-        if(l1.getAllTrotinetesLivres().size()<2){
-            System.out.println("FALHOU NA PRIMEIRA CONDICAO");
-            System.out.println(l1.getAllTrotinetesLivres().size());
-            return recompensa;
-        }
-        else {
-            int i = 1;
-            boolean found = false;
-            while (!found) {
-                List<Local> l = calculaProximidades(l2.getName(),i);
-                int numLocais= l.size();
-                System.out.println("NUMERO DE LOCAIS PROXIMOS:"+numLocais);
-                if(l.stream().filter(x->x.getAllTrotinetesLivres().size()==0).count()==numLocais){
-                    l.forEach(System.out::println);
-                    recompensa++;
-                    System.out.println("+1");
-                }else{
-                    found=true;
-                    System.out.println("ACABOU");
-                }
-                i++;
-            }
-        }
-        recompensas.put(l1.getName()+"-"+l2.getName(),recompensa);
-        System.out.println(recompensa);
-        return recompensa;
-    }
-*/
+
     public double calculaDistancia(String Origem, String Destino){
         int x1=0,x2=0,y1=0,y2=0;
         for (int i = 0; i < this.size; i++) {
@@ -326,43 +282,10 @@ public class Mapa {
                 }
             }
         }
-        if(locais.size()==0) System.out.println("erro");;
+        if(locais.size()==0) System.out.println("erro");
         return locais;
     }
 
-/*
-    public double calculaCusto(String codreserva,String local){
-        System.out.println("TRATA ESTACIONAMENTO");
-        Local chegada = getLocal(local);
-        String codigo = reservas.get(codreserva).split(";")[0];//codigo trotinete
-        System.out.println(codigo);
-        Local partida = getLocal(reservas.get(codreserva).split(";")[1]);
-        System.out.println(partida);
-        LocalDateTime beginTime = tempoReservas.get(codreserva);
-        System.out.println(beginTime);
-        long time = ChronoUnit.SECONDS.between(beginTime,LocalDateTime.now());
-        System.out.println("partida:"+partida.getName()+" chegada"+chegada.getName());
-        double distancia = calculaDistancia(partida.getName(),chegada.getName());
-        System.out.println((time*0.15)/distancia);
-        return ((time*0.15)/distancia)+0.5;
-    }
-
-    public int devolveRecompensa(String codreserva,String local){
-        Local chegada = getLocal(local);
-        String codigo = reservas.get(codreserva).split(";")[0];//codigo trotinete
-        System.out.println("CODIGO:"+codigo);
-        System.out.println("chegada: "+chegada.getName());
-        Local partida = getLocal(reservas.get(codreserva).split(";")[1]);
-        System.out.println("partida: "+partida.getName());
-        int r = calculaRecompensa(partida.getName(),chegada.getName());
-        System.out.println(chegada.getAllTrotinetesLivres().size());
-        Trotinete t = trotinetes.stream().filter(x->x.getCodigo().equals(codigo)).findFirst().get();
-        t.setlivre();
-        chegada.addLivre(t);
-        System.out.println(chegada.getAllTrotinetesLivres().size());
-        return r;
-    }
-*/
     public double calculaCusto(String codReserva,String local) throws myExceptions.IncorrectDestinationName, myExceptions.IncorrectReservationCode {
         System.out.println("TRATA ESTACIONAMENTO");
         Local chegada = getLocal(local);
@@ -394,7 +317,6 @@ public class Mapa {
             readWriteLock.readLock().unlock();
         }
     }
-
 
 
     public List<String> lerFicheiro (String nomeFich) throws FileNotFoundException {
@@ -434,38 +356,13 @@ public class Mapa {
         }
     }
 
-/*
-    public String findRecompensas(String origem, int distancia) {
-        //Lista com os lugares que são próximos da origem dada uma determinada distância
-        List<Local> proximidades = calculaProximidades(origem, distancia);
-        StringBuilder resposta = new StringBuilder();
-        resposta.append("\n------NOTIFICAÇÃO------\n");
-
-        //está a gerar recompensas no raio com trotinetes disponiveis
-
-        for (Local lugar : proximidades) {
-            if (lugar.getAllTrotinetesLivres().size() == 0)
-                this.recompensas.put(origem + "-" + lugar.getName(), calculaRecompensa(origem, lugar.getName()));
-        }
-
-        //System.out.println(this.recompensas);
-        int j=0;
-        for (String local : this.recompensas.keySet())
-            if(local.startsWith(origem) && this.recompensas.get(local)>0) {
-                resposta.append(local).append(" - ").append(this.recompensas.get(local).toString()).append('\n');
-                j++;
-            }
-        if(j==0) resposta.append("De momento não existem recompensas num raio de ").append(distancia).append(" km de ").append(origem);
-        return resposta.toString();
-    }
-*/
 
     //funcionalidade 1 - trotinetes livres
     public String showDisponiveis(List<Local> locais){
         StringBuilder tabela = new StringBuilder();
         int k=0;
         try {
-            readWriteLock.writeLock().lock();
+            readWriteLock.readLock().lock();
             for (Local l : locais) {
                 if (l.getAllTrotinetesLivres().size() != 0) {
                     k += l.getAllTrotinetesLivres().size();
@@ -476,7 +373,7 @@ public class Mapa {
             tabela.append("Total de trotinetes disponíveis = ").append(k);
             return tabela.toString();
         }finally {
-            readWriteLock.writeLock().unlock();
+            readWriteLock.readLock().unlock();
         }
     }
 }
