@@ -1,13 +1,15 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Local {
     private String name;
     private int x;
     private int y;
     private List<Trotinete> allTrotinetes;
-    private ReentrantLock l = new ReentrantLock();
+    private ReadWriteLock l = new ReentrantReadWriteLock();
 
     public Local(String nome,int x, int y) {
         this.name = nome;
@@ -17,98 +19,86 @@ public class Local {
     }
 
     public String getName(){
-        try{
-            l.lock();
-            return this.name;
-        }finally {
-            l.unlock();
-        }
+        return this.name;
     }
 
     public void setName(String name){
-        try{
-            l.lock();
-            this.name=name;
-        }finally {
-            l.unlock();
-        }
+        this.name=name;
     }
 
     public int getX() {
-        try{
-            l.lock();
-            return x;
-        }finally {
-            l.unlock();
-        }
+        return x;
     }
 
     public void setX(int x) {
-        try {
-            l.lock();
-            this.x = x;
-        }finally {
-            l.unlock();
-        }
+        this.x = x;
     }
 
     public int getY() {
-        try {
-            l.lock();
-            return y;
-        }finally {
-            l.unlock();
-        }
+        return y;
     }
 
     public void setY(int y) {
-        try {
-            l.lock();
-            this.y = y;
-        }finally {
-            l.unlock();
-        }
+        this.y = y;
     }
 
     public List<Trotinete> getAllTrotinetesLivres(){
         List<Trotinete> trotinetes=new ArrayList<>();
         try {
-            l.lock();
+            l.readLock().lock();
             for(Trotinete t : allTrotinetes){
                 if(t.islivre()) trotinetes.add(t);
             }
             return this.allTrotinetes;
         }finally {
-            l.unlock();
+            l.readLock().unlock();
+        }
+    }
+
+    public void removeLivre(Trotinete t){
+        try{
+            l.writeLock().lock();
+            getAllTrotinetesLivres().remove(t);
+        }finally {
+            l.writeLock().unlock();
+        }
+    }
+
+    public void addLivre(Trotinete t){
+        try{
+            l.writeLock().lock();
+            getAllTrotinetesLivres().add(t);
+        }finally {
+            l.writeLock().unlock();
         }
     }
 
     public List<Trotinete> getAllTrotinetes(){
         try {
-            l.lock();
+            l.readLock().lock();
             return this.allTrotinetes;
         }finally {
-            l.unlock();
+            l.readLock().unlock();
         }
     }
 
     public void adicionaTrotinete(Trotinete t){
         try{
-            l.lock();
+            l.writeLock().lock();
             this.allTrotinetes.add(t);
         }finally {
-            l.unlock();
+            l.writeLock().unlock();
         }
     }
 
     public void removeTrotinete(String codigo){
         try{
-            l.lock();
+            l.writeLock().lock();
             for(Trotinete t : allTrotinetes){
                 if(t.getCodigo().equals(codigo)) this.allTrotinetes.remove(t);
             }
         }finally {
-            l.unlock();
+            l.writeLock().unlock();
         }
     }
 

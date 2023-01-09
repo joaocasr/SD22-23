@@ -1,11 +1,13 @@
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class UsersFacade {
     private Map<String, User> allUsers;
-    ReentrantLock l = new ReentrantLock();
+    ReadWriteLock l = new ReentrantReadWriteLock();
 
     public UsersFacade(){
         this.allUsers = new HashMap<>();
@@ -19,50 +21,50 @@ public class UsersFacade {
     public boolean login(String username,String password){
         boolean b = false;
         try {
-            l.lock();
+            l.readLock().lock();
             if (this.allUsers.get(username).getPassword().equals(password)) {
                 b=true;
             }
             return b;
         }finally {
-            l.unlock();
+            l.readLock().unlock();
         }
     }
 
     public boolean registarUser(String username,String password){
         boolean b = false;
         try {
-            l.lock();
-            if(!(this.existeUser(username)))
+            l.writeLock().lock();
+            if(!(this.allUsers.containsKey(username)))
             {
                 this.allUsers.put(username,new User(username,password));
                 b=true;
             }
             return b;
         }finally {
-            l.unlock();
+            l.writeLock().unlock();
         }
     }
 
     public boolean existeUser(String username){
         boolean b = false;
         try {
-            l.lock();
+            l.readLock().lock();
             if (this.allUsers.containsKey(username)) {
                 b=true;
             }
             return b;
         }finally {
-            l.unlock();
+            l.readLock().unlock();
         }
     }
 
     public Map<String,User> getAllUsers(){
         try{
-            l.lock();
+            l.readLock().lock();
             return this.allUsers;
         }finally {
-            l.unlock();
+            l.readLock().unlock();
         }
     }
 

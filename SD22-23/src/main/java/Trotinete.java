@@ -3,7 +3,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Trotinete {
     private boolean livre;
     private String codigo;
-    private ReentrantLock reentrantLock = new ReentrantLock();
 
     public Trotinete(String codigo,boolean livre){
         this.livre = livre;
@@ -11,21 +10,15 @@ public class Trotinete {
     }
 
     public boolean islivre() {
-        try{
-            reentrantLock.lock();
-            return this.livre;
-        }finally {
-            reentrantLock.unlock();
-        }
+        return this.livre;
     }
 
     public void setlivre(){
-        try{
-            reentrantLock.lock();
-            this.livre=true;
-        }finally {
-            reentrantLock.unlock();
-        }
+        this.livre=true;
+    }
+
+    public void setOcupada(){
+        this.livre=false;
     }
 
     public String getCodigo() {

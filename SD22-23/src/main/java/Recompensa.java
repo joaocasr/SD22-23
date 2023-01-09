@@ -5,13 +5,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Recompensa {
 
-    private String start;                   // Name of the starting point
-    private String end;                     // Destination's name
-    private int reward;                  // Reward given when completing the trip
+    private String start; // Name of the starting point
+    private String end;   // Destination's name
+    private double reward;   // Reward given when completing the trip
 
     // CONSTRUCTORS
     public Recompensa() {}
-    public Recompensa(String st, String finish, int prize) {
+    public Recompensa(String st, String finish, double prize) {
         this.start = st;
         this.end = finish;
         this.reward = prize;
@@ -34,11 +34,11 @@ public class Recompensa {
         this.end = end;
     }
 
-    public int getReward() {
+    public double getReward() {
         return reward;
     }
 
-    public void setReward(int reward) {
+    public void setReward(double reward) {
         this.reward = reward;
     }
 
