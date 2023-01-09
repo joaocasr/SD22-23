@@ -16,6 +16,7 @@ public class ServerWithWorkers {
     private static ReentrantLock l = new ReentrantLock();
     private static Condition reward = l.newCondition();
     private static int wait;
+    private static boolean estacionamento = false;
 
     public static void main(String[] args) throws Exception {
         System.out.println("Executing...");
@@ -26,7 +27,7 @@ public class ServerWithWorkers {
         new Thread(() -> {
             while (true) {
                     mapa.initTrotLivres();
-                    mapa.geraRecompensas();
+                    mapa.geraRecompensas(estacionamento);
                     wait = 1;
                 while (wait == 1) {
                     try {
@@ -122,14 +123,16 @@ public class ServerWithWorkers {
                             System.out.println("tag4"+info[0] + "," + info[1]);
                             try {
                                 double custo = mapa.calculaCusto(info[0], info[1]); //reserva local
+                                double r = mapa.findReward(info[0],info[1]);
                                 //int recompensa = mapa.devolveRecompensa(info[0],info[1]);
                                 //System.out.println(recompensa);
                                 DecimalFormat decimalFormat = new DecimalFormat("0.00");
                                 //System.out.println(custo+"eur");
-                                String response = "Estacionamento efetuado com sucesso!\nCusto da viagem:" + decimalFormat.format(custo) + "€.\nRecompensa:" + decimalFormat.format(mapa.findReward(info[0],info[1])) + "€";
+                                String response = "Estacionamento efetuado com sucesso!\nCusto da viagem:" + decimalFormat.format(custo) + "€.\nRecompensa:" + decimalFormat.format(r) + "€";
                                 try {
                                     l.lock();
                                     wait = 0;
+                                    estacionamento = true;
                                     reward.signalAll();
                                 }
                                 finally {
@@ -159,6 +162,7 @@ public class ServerWithWorkers {
                             try {
                                 l.lock();
                                 wait = 0;
+                                estacionamento = false;
                                 reward.signalAll();
                             }
                             finally {

@@ -190,14 +190,14 @@ public class Mapa {
         });
     }
 
-    public void geraRecompensas() {
+    public void geraRecompensas(boolean estacionamento) {
         List<Local> surroundings;
         String origem, destino;
         int valorOrigem, valorDestino, aux = 1, coords, trotinetes = 0, x, y, D = 1;
 
         try {
             readWriteLock.writeLock().lock();
-            recompensas.clear();
+            if (estacionamento) recompensas.clear();
             for (int i = 0; i < trotLivres.size();) {
                 origem = trotLivres.get(i).getKey();
                 valorOrigem = trotLivres.get(i).getValue();
@@ -403,6 +403,7 @@ public class Mapa {
             if (recompensas.containsKey(partida.getName())) {
                 for (Recompensa recompensa : recompensas.get(partida.getName())) {
                     if (recompensa.getEnd().equals(chegada.getName())) {
+                        System.out.println("Cheguei aqui!");
                         reward = recompensa.getReward();
                         recompensas.get(partida.getName()).remove(recompensa);
                         break;
