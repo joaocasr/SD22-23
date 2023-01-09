@@ -134,50 +134,42 @@ public class TextUI {
 
 
     public void efetuarLogin() throws InterruptedException {
-        Thread t = new Thread(() -> {
-            try {
-                System.out.println("Insira o username: ");
-                Scanner scanner = new Scanner(System.in);
-                String username = scanner.nextLine();
-                System.out.println("Insira a password: ");
-                String password = scanner.nextLine();
-                String dados = username+";"+password+";";
-                demultiplexer.send(1,dados.getBytes());
+        try {
+            System.out.println("Insira o username: ");
+            Scanner scanner = new Scanner(System.in);
+            String username = scanner.nextLine();
+            System.out.println("Insira a password: ");
+            String password = scanner.nextLine();
+            String dados = username+";"+password+";";
+            demultiplexer.send(1,dados.getBytes());
 
-                byte [] b = demultiplexer.receive(1);
-                String response = new String(b);
-                System.out.println(response);
-                if(response.contains("sucesso")){
-                    MenuSecundario();
-                }
+            byte [] b = demultiplexer.receive(1);
+            String response = new String(b);
+            System.out.println(response);
+            if(response.contains("sucesso")){
+                MenuSecundario();
+            }
         } catch (Exception e) {
                 e.printStackTrace();
-            }
-        });
-        t.start();
-        t.join();
+        }
     }
 
     public void efetuarRegisto() throws InterruptedException {
-        Thread t = new Thread(() -> {
-            try {
-                System.out.println("Insira o username: ");
-                Scanner scanner = new Scanner(System.in);
-                String username = scanner.nextLine();
-                System.out.println("Insira a password: ");
-                String password = scanner.nextLine();
-                String dados = username+";"+password+";";
-                demultiplexer.send(2,dados.getBytes());
+        try {
+            System.out.println("Insira o username: ");
+            Scanner scanner = new Scanner(System.in);
+            String username = scanner.nextLine();
+            System.out.println("Insira a password: ");
+            String password = scanner.nextLine();
+            String dados = username+";"+password+";";
+            demultiplexer.send(2,dados.getBytes());
 
-                byte [] b = demultiplexer.receive(2);
-                String response = new String(b);
-                System.out.println(response);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        t.start();
-        t.join();
+            byte [] b = demultiplexer.receive(2);
+            String response = new String(b);
+            System.out.println(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void listarTrotinetesLivres() throws InterruptedException {

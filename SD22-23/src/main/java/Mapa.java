@@ -62,42 +62,36 @@ public class Mapa {
 
         double aux = (double) distancia;
         Local laux = null;
-        List<Trotinete> listLivres;
         boolean control = false;
 
-        //try {
-        //    readWriteLock.readLock().lock();
-            for (Local l : locais) {
-                if (calculaDistancia(origem, l.getName()) <= aux) {
-                    listLivres = l.getAllTrotinetesLivres();
-                    if (listLivres.size() != 0) {
-                        t = listLivres.get(0);
-                        aux = calculaDistancia(origem, l.getName());
-                        laux = l;
-                        control = true;
-                    }
+        for (Local local : locais) {
+            if (calculaDistancia(origem, local.getName()) <= aux) {
+                if (local.getAllTrotinetesLivres().size() != 0) {
+                    t = local.getAllTrotinetesLivres().get(0);
+                    aux = calculaDistancia(origem, local.getName());
+                    laux = local;
+                    control = true;
                 }
             }
-            if (control) {
-                String codigoreserva = geracodigoreserva(t);
-                try {
-                    readWriteLock.writeLock().lock();
-                    reservas.put(codigoreserva, t.getCodigo() + ";" + laux.getName());
-                    t.setOcupada();
-                    laux.removeLivre(t);
-                    tempoReservas.put(codigoreserva, LocalDateTime.now());
-                }
-                finally {
-                    readWriteLock.writeLock().unlock();
-                }
-                localcodigo = codigoreserva + ";" + laux.getName();
-            } else {
-                localcodigo = "erro de insucesso -1";
+        }
+        if (control) {
+            String codigoreserva = geracodigoreserva(t);
+            try {
+                readWriteLock.writeLock().lock();
+                reservas.put(codigoreserva, t.getCodigo() + ";" + laux.getName());
+                tempoReservas.put(codigoreserva, LocalDateTime.now());
             }
-            return localcodigo;
-    //    }finally {
-    //        readWriteLock.readLock().lock();
-    //   }
+            finally {
+                readWriteLock.writeLock().unlock();
+            }
+            localcodigo = geracodigoreserva(t) + ";" + laux.getName();
+            t.setOcupada();
+            laux.removeLivre(t);
+
+        } else {
+            localcodigo = "erro de insucesso -1";
+        }
+        return localcodigo;
     }
 
     public void distribuicaoAleatoria(Trotinete t){
@@ -200,10 +194,11 @@ public class Mapa {
         List<Local> surroundings;
         String origem, destino;
         int valorOrigem, valorDestino, aux = 1, coords, trotinetes = 0, x, y, D = 1;
+
         try {
             readWriteLock.writeLock().lock();
-            //recompensas = new HashMap<>();
-            for (int i = 0; i < trotLivres.size(); i++) {
+            recompensas.clear();
+            for (int i = 0; i < trotLivres.size();) {
                 origem = trotLivres.get(i).getKey();
                 valorOrigem = trotLivres.get(i).getValue();
                 destino = trotLivres.get(trotLivres.size() - aux).getKey();
@@ -211,10 +206,7 @@ public class Mapa {
 
                 if (valorOrigem > 1) {
                     if (valorDestino == 0) {
-                        coords = getCoords(destino);
-                        x = coords / 10;
-                        y = coords % 10;
-                        surroundings = getSurrounding(x, y, D);
+                        surroundings = calculaProximidades(destino,D);
                         for (Local l : surroundings) {
                             trotinetes += l.getAllTrotinetesLivres().size();
                         }
@@ -229,10 +221,13 @@ public class Mapa {
                             }
                             if (notIn) recompensas.get(origem).add(new Recompensa(origem,destino,calculaDistancia(origem,destino)));
                         }
-                        else i--;
                         aux++;
                         trotinetes = 0;
-                    } else break;
+                    }
+                    else {
+                        aux = 1;
+                        i++;
+                    }
                 } else break;
             }
         }
@@ -323,22 +318,17 @@ public class Mapa {
 
     public List<Local> calculaProximidades(String origem, int distancia){
         List<Local> locais = new ArrayList<>();
-        try {
-            readWriteLock.readLock().lock();
-            if (getLocal(origem) != null) {
-                for (int i = 0; i < this.size; i++) {
-                    for (int j = 0; j < this.size; j++) {
-                        if (calculaDistancia(origem, mapa[i][j].getName()) >= 0 && calculaDistancia(origem, mapa[i][j].getName()) <= distancia)
-                            locais.add(mapa[i][j]);
-                    }
+
+        if (getLocal(origem) != null) {
+            for (int i = 0; i < this.size; i++) {
+                for (int j = 0; j < this.size; j++) {
+                    if (calculaDistancia(origem, mapa[i][j].getName()) >= 0 && calculaDistancia(origem, mapa[i][j].getName()) <= distancia)
+                        locais.add(mapa[i][j]);
                 }
             }
-            if (locais.size() == 0) System.out.println("erro");
-            return locais;
         }
-        finally {
-            readWriteLock.readLock().unlock();
-        }
+        if (locais.size() == 0) System.out.println("erro");
+        return locais;
     }
 
     public double calculaCusto(String codReserva,String local) throws myExceptions.IncorrectDestinationName, myExceptions.IncorrectReservationCode {
@@ -357,12 +347,10 @@ public class Mapa {
                 System.out.println("partida:" + partida.getName() + " chegada" + chegada.getName());
                 double distancia = calculaDistancia(partida.getName(), chegada.getName());
                 System.out.println((time * 0.15) / distancia);
-                List<Trotinete> list = chegada.getAllTrotinetes();
-                for (Trotinete t : list) {
-                    if (codigo.equals(t.getCodigo())) {
-                        t.setlivre();
-                    }
-                }
+                Trotinete t = trotinetes.stream().filter(x->x.getCodigo().equals(codigo)).findFirst().get();
+                t.setlivre();
+                chegada.addLivre(t);
+
                 return ((time * 0.15) + distancia) + 0.5;
             } else if (chegada == null) {
                 throw new myExceptions.IncorrectDestinationName("Local de estacionamento indicado é inválido!");
@@ -450,7 +438,7 @@ public class Mapa {
         StringBuilder tabela = new StringBuilder();
         int k=0;
         try {
-            readWriteLock.writeLock().lock();
+            readWriteLock.readLock().lock();
             for (Local l : locais) {
                 if (l.getAllTrotinetesLivres().size() != 0) {
                     k += l.getAllTrotinetesLivres().size();
@@ -461,7 +449,7 @@ public class Mapa {
             tabela.append("Total de trotinetes disponíveis = ").append(k);
             return tabela.toString();
         }finally {
-            readWriteLock.writeLock().unlock();
+            readWriteLock.readLock().unlock();
         }
     }
 }
