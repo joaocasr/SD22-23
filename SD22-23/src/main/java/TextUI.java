@@ -244,6 +244,24 @@ public class TextUI {
         t.join();
     }
 
-    public void listagemRecompensas(){}
-
+    public void listagemRecompensas() throws InterruptedException {
+        Thread t = new Thread(()->{
+            try {
+                Scanner scanner = new Scanner(System.in);
+                System.out.println("Insira o lugar atual:");
+                String local = scanner.nextLine();
+                System.out.println("Insira a distância do local atual para procurar recompensas:");
+                int dist = scanner.nextInt();
+                String dados = local+";"+dist+";";
+                demultiplexer.send(6,dados.getBytes());
+                byte[] b = demultiplexer.receive(6);
+                String response = new String(b);
+                System.out.println(response);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        t.start();
+        t.join();
+    }
 }

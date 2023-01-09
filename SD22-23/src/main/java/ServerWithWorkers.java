@@ -3,17 +3,41 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ServerWithWorkers {
     private static UsersFacade users;
     private static Mapa mapa;
     private static Thread threadnot=null;
+    private static ReentrantLock l = new ReentrantLock();
+    private static Condition reward = l.newCondition();
+    private static int wait;
 
     public static void main(String[] args) throws Exception {
         System.out.println("Executing...");
         ServerSocket ss = new ServerSocket(12345);
         users = new UsersFacade();
         mapa = new Mapa();
+
+        new Thread(() -> {
+            while (true) {
+                mapa.initTrotLivres();
+                mapa.geraRecompensas();
+                wait = 1;
+                while (wait == 1) {
+                    try {
+                        l.lock();
+                        reward.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    finally {
+                        l.unlock();
+                    }
+                }
+            }
+        }).start();
 
         while(true) {
             System.out.println("Running...");
@@ -31,8 +55,7 @@ public class ServerWithWorkers {
                             Thread thread = new Thread(()->{
                                 String[] info = data.split(";");
                                 System.out.println("data "+info[0]+" >< "+info[1]);
-                                String response = mapa.findRecompensas(info[0], Integer.parseInt(info[1]));
-                                System.out.println(response);
+                                String response = "\n------NOTIFICAÇÃO------\n" + mapa.getRecompensaProximidade(info[0], Integer.parseInt(info[1]));
                                 try {
                                     c.send(0, response.getBytes());
                                 }catch (IOException e){
@@ -91,14 +114,27 @@ public class ServerWithWorkers {
                         else if(frame.tag == 4){    //estacionar
                             String[] info = data.split(";");
                             System.out.println("tag4"+info[0] + "," + info[1]);
-                            int recompensa = mapa.devolveRecompensa(info[0],info[1]);
-                            //System.out.println(recompensa);
-                            double custo = mapa.calculaCusto(info[0],info[1]); //reserva local
-                            DecimalFormat decimalFormat = new DecimalFormat("0.00");
-                            //System.out.println(custo+"eur");
-                            String response = "Estacionamento efetuado com sucesso!\nCusto da viagem:"+decimalFormat.format(custo)+"€.\nRecompensa:"+recompensa+"€";
-                            c.send(frame.tag,response.getBytes());
+                            try {
+                                double custo = mapa.calculaCusto(info[0], info[1]); //reserva local
+                                //int recompensa = mapa.devolveRecompensa(info[0],info[1]);
+                                //System.out.println(recompensa);
+                                DecimalFormat decimalFormat = new DecimalFormat("0.00");
+                                //System.out.println(custo+"eur");
+                                String response = "Estacionamento efetuado com sucesso!\nCusto da viagem:" + decimalFormat.format(custo) + "€.\nRecompensa:" + decimalFormat.format(mapa.findReward(info[0],info[1])) + "€";
+                                try {
+                                    l.lock();
+                                    wait = 0;
+                                    reward.signalAll();
+                                }
+                                finally {
+                                    l.unlock();
+                                }
 
+                                c.send(frame.tag, response.getBytes());
+                            }
+                            catch (myExceptions.IncorrectDestinationName | myExceptions.IncorrectReservationCode ex) {
+                                c.send(frame.tag, ex.getMessage().getBytes());
+                            }
                         }else if(frame.tag == 5){
                             String[] info = data.split(";");
                             System.out.println(info[0] + "," + info[1]);
@@ -110,7 +146,20 @@ public class ServerWithWorkers {
                                 String codigo = localcodigo.split(";")[0];
                                 response = "Local: " + local + " \nCódigo de Reserva:" + codigo;
                             }else response = localcodigo;
+                            try {
+                                l.lock();
+                                wait = 0;
+                                reward.signalAll();
+                            }
+                            finally {
+                                l.unlock();
+                            }
                             c.send(frame.tag,response.getBytes());
+                        }else if(frame.tag == 6) {
+                            String[] info = data.split(";");
+                            System.out.println(info[0] + "," + info[1]);
+                            String response = "\n------RECOMPENSAS------\n" + mapa.getRecompensaProximidade(info[0], Integer.parseInt(info[1]));
+                            c.send(6,response.getBytes());
                         }
                     }
                 } catch (Exception e) {
