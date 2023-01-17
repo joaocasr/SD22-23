@@ -1,0 +1,179 @@
+1) Vantagens e desvantagens de dados em formato texto para a serialização em sistemas distribuidos:
+     Vantagens: Os dados são legíveis,permitindo fazer um debug mais fácil
+
+     Desvantagens: Os dados são representados num maior número de bytes em comparação à codificação binária,
+                   o que na troca de mensagens sobrecarrega a rede,falta de encriptação dos dados (menor segurança),
+                   um formato mais lento de descodificar.
+     Formato Binario-> uma alteraçao de apenas 1 byte do seu conteudo pode invalidar toda a mensagem;
+                       efetua acessos alinhados a memoria (+rapidos)
+
+2) Identifique o principal desafio na implementação de middleware de invocação remota que suporte clientes
+  com vários threads e invocações concorrentes ao mesmo servidor. Descreva sucintamente uma solução.
+
+  A principal desvantagem dos RPCs é que o chamador e o chamado precisam estar
+  a executar ao mesmo tempo para que a chamada seja bem-sucedida. No entanto, em
+  muitos cenários esta atividade simultânea é muitas vezes difícil. Nesses casos,
+  a melhor opção é oferecer um sistema de mensagens transportando solicitações
+  do aplicativo A para executar uma ação no aplicativo B.
+  O sistema de mensagens garante que eventualmente o pedido seja entregue,
+  e, se necessário, que uma resposta seja eventualmente retornada também. Esta troca
+  de mensagens é baseada em stubs, através destes é possível transformar pedidos feitos por um serviço(por exemplo)
+  para assim fazer invocações de procedimentos atraves da rede( quando as mensagens chegam ao servidor o server stub
+  desempacota os argumentos, depois o server procedure faz uma cópia dos argumentos para a stack juntamente com os endereços de retorno) .
+  Este envia para o server stub que faz o empacotamento do resultado numa mensagem e envia para o OS local do servidor que comunica com o OS do cliente.
+  O OS do cliente passa a mensagem para o client stub que faz o desempacotamento do resultado e devolve ao cliente).
+  Desta forma, o cliente não sabe que o trabalho foi feito remotamente noutra máquina.
+  Surgem outras questões como quando os argumentos das mensagens são por exemplo estruturas de dados, ou até o posicionamento
+  dos bytes em memória para máquinas que têm arquiteturas diferentes. No entanto,uma solução passível é enviar os dados prefixados com um etiqueta que indique
+  qual a representação a ser utilizada. Desta forma, o recetor saberá se precisa de converter ou não os dados que vêm num array de bytes pela rede(marshalling).
+  Em um cliente multithreaded, um thread pode ser criado para emitir cada solicitação RPC. Quando vários threads compartilham o mesmo identificador de cliente,
+  apenas um thread por vez poderá fazer uma solicitação RPC. Todos os outros encadeamentos aguardarão até que a solicitação pendente seja concluída.
+  Por outro lado, quando vários threads fazem solicitações RPC usando diferentes identificadores de cliente, as solicitações serão executadas simultaneamente.
+
+3) Defina transparência de acesso e explique em que medida é que a invocação remota (RPC) contribui para a obter:
+
+    Através do RPC o programador não se precisa de preocupar onde é que vai buscar os recursos necessários para
+    efetuar um dado procedimento, assim como por outro lado não precisa de se preocupar se a invocação é feita
+    remotamente ou localmente. Quando é gerado um client stub, este faz a gestão da transparência e disponibiliza a
+    interface do servidor, escondendo as possíveis diferenças de arquitetura ou de comunicação. O client stub transforma
+    uma chamada local numa mensagem que é enviada para o servidor e vice-versa obtendo os valores de retorno da invocacao de
+    uma dado procedimento.
+    Desta forma, o RPC ajuda a cumprir a transparência de acesso, pois tanto encapsula as rotinas de acesso e consulta,
+    como efetua o controlo de concorrência do sistema distribuído.
+
+
+4) Identifique a principal dificuldade criada pela escalabilidade geográfica a aplicações cliente/servidor interativas e explique uma forma de a resolver.
+
+    A razão pela qual é complicado escalar sistemas distribuidos que foram desenhadas para LAN's, é que estes sistemas têm
+    como base uma comunicação síncrona(o cliente bloqueia até receber uma resposta do servidor). Em LAN's a comunicação entre duas máquinas
+    encontra-se na ordem dos microsegundos(pior cenário),porém em WAN's estámos a falar em milisegundos.
+    Uma forma de combater este problema seria adotar paradigmas de rede semelhantes a edge computing, em que os dados do cliente são processados o
+    mais próximo possível da fonte de dados(resulta em serviços mais rápidos e maior flexibilidade).
+
+5) Distinga comunicação síncrona de assíncrona em sistemas distribuídos. Dê exemplos de middleware para cada uma delas
+
+   Síncrona: o receive e o send são ações bloqueantes, ou seja, o servidor bloqueia à espera do input do cliente, enquanto que o cliente
+   após enviar o seu input fica bloqueado à espera da resposta do servidor.
+   Assíncrona: o cliente assim que efetua um pedido este não fica bloqueado e pode prosseguir a sua execução, ou seja, tarefas independentes são escalonadas
+   para execução enquanto que outra fica à espera que a comunicação fique completa.
+
+   Ex. sincrona:Message passing em MOM
+       assincrona:Message Queuing em MOM
+
+6) Qual a razão para estruturar uma aplicação distribuídas em camadas? Use um exemplo.
+
+    A arquitetura mais adotada atualmente, principalmente em aplicações web, é de 3 camadas.
+    A primeira camada é ao nivel da interface(user-interface), a segunda é referente ao processamento de dados (bussiness layer)
+    e a outra é referente aos dados(data-layer). Uma aplicação que esteja a ser estruturada desta forma confere um
+    maior nivel de organizacao, sem que uma alteração numa das camdas tenha um impacto direto no nos outros.
+
+7) Explique como funciona um protocolo de exclusão mútua distribuída centralizado.Identifique as principais vantagens e desvantagens.
+
+    Num protocolo de exclusão mútua distribuída centralizado um dos processos é eleito o coordenador sempre que um dos
+    outros processos quiser aceder a um recurso partilhado, este envia uma mensagem ao coordenador para lhe pedir permissão
+    para aceder ao recurso. Se nenhum outro processo estiver a utilizar o recurso, o coordenador concede a permissão, caso
+    contrário o processo fica bloqueado(sem resposta do coordenador) e coloca o mesmo numa queue até o processo libertar o recurso.
+    Após isso o processo que está à cabeca da fila sai e o coordenador responde ao mesmo,concedendo-lhe a permissao.
+
+    Vantagem: Este protocolo é justo pois tem em conta a ordem de chegada dos processos que pretendem aceder ao recurso partilhado.
+              Garante a exclusão mútua. O esquema é de implementação simples, com apenas 3 mensagens por recurso (permissao,garantia e libertação).
+              Não há deadlocks.
+
+    Desvantagens: Em sistemas em que apenas existe apenas 1 processo/servidor a coordenar n processos pode originar bottleneck
+
+8) Identifique uma aplicação e descreva sucintamente o funcionamento de um relógio de Lamport num sistema distribuído.
+
+    Cada um dos nodos de um sistema distribuído irá possui NÃO um tempo absoluto, mas sim um tempo LÓGICO de forma a que seja possivel
+    averiguar a ordem pela qual os eventos ocorrem, ou seja, o que vai interessar será o tempo relativo entre os nodos, de forma a que seja
+    possível identificar os eventos mais recentes ou antigos.
+
+    - Se A e B são eventos do mesmo processo e A foi executado antes de B, então A -> B.
+    - Se A é o evento de envio de uma mensagem por um processo e B o evento de receção dessa mensagem por outro processo, então A -> B
+    - Se A -> B e B -> C, então A -> C.
+
+    Para implementar o relógio lógico de Lamport:
+    - Cada um dos nodos terá um contador t inicializada a 0.
+    - Após um evento t=t+1
+    - quando o processo j envia uma mensagem para o processo p: t=t+1; (t,m) tuplo-(timestamp,mensagem)
+    - quando o processo p recebe t''= max(t'',t')+1; (t'',m)
+
+    Exemplo: serviço bancário que tem 2 base de dados em duas localizacoes diferentes, de forma que uma determinada
+             query é redirecionada à base de dados mais próxima. Se o cliente A depositar 100eur na bdA e o gestor bancário
+             atualizar a conta do cliente A com +50eur juro na bdB, as informações ficariam inconsistentes. Cada um dos processos ira
+             receber uma mensagem em multicast com um timestamp. As mensagens enviadas por um nodo são recebidas pela mesma ordem. O
+             recetor faz multicasting de um ack para outros processos (o timestamp do recetor vai ser menor que o do ack), até que irá
+             chegar um momento em que todos os processos vao ter a mesma copia local na queue, permitindo que as mensagens sejam recebidas
+             pela mesma ordem em todo o lado.
+
+9) Qual a relevância do sistema operativo na resolução do problema de exclusão mútua no modelo de memória partilhada e no modelo de passagem de mensagens?
+
+   O sistema operativo é o responsável por fazer a gestão de recursos, assim como dos processos, possibilitando que estes fiquem
+   bloqueados de forma a não acederem uma dada secção crítica. No modelo de memória partilhada a exclusão mútua é garantida com a aquisição de locks e
+   no modelo de passagem de mensagens é feita através do envio de mensagens de um processo para o controlador(sistema operativo). Em ambos os casos, o
+   sistema operativo é responsável por bloquear processos quando existe um processo que já está a utilizar um recurso e acordar processos bloqueados quando
+   um processo liberta um lock(mp) ou envia uma mensagem de libertação(mpm).
+
+10) Descreva a arquitetura de um sistema de invocação remota de métodos em sistemas distribuídos orientados por objetos,justificando o objetivo de cada um dos componentes.
+
+    A invocação remota de métodos em SD permite que um cliente que se encontre na sua máquina virtual java consiga invocar
+    métodos de um objeto gerenciado por uma outra máquina virtual. O rmi permite a comunicacao remota entre duas aplicacoes
+    usando dois objetos (stub-cliente e skeleton-server). Na marquina virtual do cliente temos um object client que faz o tratamento
+    do client stub que interage com o layer remoto de referencia. Para transferir dados entre as máquinas será usado o protocolo TCP,
+    que será tratado pela camada de transporte de ambas as máquinas. O objecto stub no lado do servidor é referenciado como skeleton.O server
+    object envia a resposta para o cliente atraves destas 3 camadas.
+
+11) Explique sucintamente em que consiste uma DHT e justifique a sua necessidade em termos dos objetivos (design goals) de sistemas distribuídos
+
+    Em sistemas peer to peer as tabelas DHT permitem uma melhor organização hierarquica e uma forma fácil de obter informação em larga escala,
+    dividindo a tabela hash por cada um dos nodos, distribuindo assim a carga por cada um dos peers. Cada um dos nodos conecta-se aos nós vizinhos,
+    e possui um identificador de m-bits. Se o nó que receber o pedido tem a chave igual à requisitada este devolve o valor, caso contrário o nó terá de
+    repassar ao nó mais próximo da chave. Se o nó cuja chave é feita a busca não estiver conectado, o nó que se deve pesquisar é o seguinte já que este
+    irá conter as chaves inferiores à dele. O encaminhamento deve ser feito para o nó cuja chave é inferior entre dois nós cuja chave está compreeendida.
+
+12) Quais os principais problemas que se resolvem com migração de código em sistemas distribuídos? Justifique.
+
+    A migração de código em sistemas distribuidos promove uma melhor performance computacional já que passamos processos
+    de máquinas que possuem uma carga considerável para máquinas que têm poucos processos a executar. Por outro lado,
+    melhora o tempo de comunicação quando migrámos o código para sistemas que possuem grandes quantidades de dados, nomeadamente,
+    em casos em que o cliente necessita de fazer operações numa base de dados que envolve essas quantidades grandes de dados (apenas é
+    enviado os resultados de uma dada query pela rede desta forma não sobrecarregamos a mesma)
+
+13 ) Diga o que entende por transparência de localização em sistemas distribuídos e explique qual é o método genérico para a atingir.
+
+    Através da transparência de localização é possivel o acesso a recursos sem saber a localização física ou na rede, isto é possível se
+    atribuirmos nomes lógicos a recursos. Por exemplo, se um utilizador quiser aceder www.google.co.jp este não necessita de saber o endereço de IP,
+    existe um serviço de DNS que resolve o endereço para um dado nome de domínio, o que possibilita o utilizador ser redirecionado para a página em causa.
+
+14) Considere um sistema de criptomoedas na Internet como o Bitcoin em que cada participante guarda uma cópia do registo de todas as transações efetuadas
+    e do conteúdo das carteiras e se quer garantir que uma mesma quantia não é gasta mais do que uma vez. Ignore os aspetos de segurança, admitindo que
+    todos os participantes são honestos. Identifique aquele que lhe parece ser o problema de sistemas distribuídos mais importante e identifique uma solução típica.
+    Discuta a adequação dessa solução ao ambiente em causa.
+
+    Atualmente existem diversos serviços de criptomoedas que possibilitam a transação e rastreamento de ativos numa rede de negócios. Um dos serviços mais
+    conhecido é o Blockchain, este é um sistema peer to peer (sistema distribuído) e que conta com uma elevada quantidade de dados e nós. Neste tipo de sistemas
+    é importante ter em conta a concorrência de eventos quando são realizados por exemplo um levantamento e um deposito envolvendo a mesma conta, e portanto é necessário
+    manter a exclusão mútua neste tipo de redes distribuidas. Por outro lado, como são realizadas cópias de registo, é importante que estas cópias estejam consistentes
+    em servidores diferentes, pelo que é necessário garantir uma sincronização do relógio. Tal pode ser alcançado com algoritmos semelhantes ao de Lamport,
+    em que temos vários processos que se vão comunicando através do envio de mensagens e timestamps em multicast.
+    O blockchain impede o gasto duplo ao transmitir grupos de transações para todos os nós na rede bitcoin e carimba-os (gossip protocol). Com base na legitimidade do bloco,
+    os nós podem aceitá-lo ou rejeitá-lo (apenas a chain mais longa é que é admitida, as transações incorretas são descartadas).
+    Quando um nó aceita um novo bloco de transações, ele o salva e armazena sobre os blocos existentes.
+
+15) Considere um sistema de partilha e distribuição de ficheiros como o BitTorrent, em que um grande número
+    de participantes espalhados pelo globo procuram e descarregam conteúdos de grande dimensão. Identifique aquele
+    que lhe parece ser o problema de sistemas distribuídos mais importante e identifique uma solução típica. Discuta
+    a adequação dessa solução a casos extremos de ficheiros impopulares (com apenas um pequeno número de cópias
+    existentes) e extremamente populares (em que pode haver milhares de tentativas simultâneas de pesquisa e descar-
+    regamento).
+
+    O sistema de partilha e distribuição de ficheiros BitTorrent é um sistema híbrido que concilia um paradigma centralizado e descentralizado.
+    Cada um dos utilizadores que pretende fazer download do mesmo ficheiro conecta-se com o mesmo servidor tracker, que é responsável por coordenar os vários peers.
+    Este coordenador é justo e evita free riding, ou seja, todos os processos vao ser tratados de igual forma mesmo que um destes tenha maiores recursos sobre outros.
+    Cada um dos peers vai comunicar-se com o peer que possui fragmentos do ficheiro que não possui.De forma a que cada nodo consiga aceder a esses dados,
+    é necessário que cada um dos nós tenha uma chave e uma tabela hash com referencias a outros nós (DHT hashtable). Este paradigma distribuído permite distribuir a
+    carga por vários nós, o que torna o processo de download muito mais rápido, evitando ter apenas 1 servidor em que poderia sobrecarregar com o número de pedidos(paradigma centralizado).
+    Por outro lado, caso um servidor vá abaixo, este evento, tem um maior impacto numa rede num paradigma centralizado do que num paradigma distribuido.
+    Num sistema como o BitTorrent em que possui vários utilizadores foi necessário ter em conta um paradigma que oferecesse grande escalabilidade.
+    Assim, podemos concluir que em casos extremos como o de download de ficheiros populares é muito rápido fortuito desta divisão de carga pelos vários peers
+    que estão a participar neste processo, buscando assim as várias partes do ficheiro. No caso extremo de termos ficheiros impopulares o custo de fazer download
+    vai ser maior, podendo acontecer do download demorar muito mais tempo ou até ficar incompleto.
